@@ -1,7 +1,6 @@
 import random
-from english_database import responses as english_responses
-from malayalam_database import responses as malayalam_responses
-
+from databases.malayalam_database import responses as malayalam_responses
+from databases.english_database import responses as english_responses
 # Function to get a response
 def get_response(user_input):
     user_input = user_input.lower().strip()
