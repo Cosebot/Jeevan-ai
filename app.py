@@ -15,17 +15,21 @@ english_responses = {
     "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
     "help": ["Sure! What do you need help with?", "I'm here to assist you."],
     "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!"],
-    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"]
+    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"], 
+"i am fine": ["Good to hear!", "Great man! ", " May god bless you!"]
 }
 
 # Malayalam responses dictionary
 malayalam_responses = {
     "ഹലോ": ["ഹലോ!", "സുഖമാണോ?", "എനിക്ക് നിങ്ങളെ സഹായിക്കാൻ കഴിയും!"],
-    "സുഖമാണോ": ["ഞാൻ ഒരു ബോട്ട് ആണ്, എനിക്ക് എല്ലാം സുഖമാണ്!", "നിങ്ങൾക്ക് സുഖമാണോ?"],
-    "സഹായം": ["സഹായം ആവശ്യമുണ്ടോ? എന്ത് കാര്യമാണെന്ന് പറയൂ.", "ഞാൻ എപ്പോഴും സഹായിക്കാൻ തയ്യാറാണ്!"],
-    "വിട": ["വിട, ശുഭദിനം!", "മറ്റൊരു ദിവസം കാണാം!", "ശുഭ ആശംസകൾ!"],
-    "നന്ദി": ["സ്വാഗതം!", "അതിൽ പ്രശ്നമൊന്നുമില്ല!", "സഹായിക്കാൻ എനിക്ക് സന്തോഷമാണ്!"]
+    "സുഖമാണോ? ": ["എനിക്ക്  സുഖമാണ്!", "നിങ്ങൾക്ക് സുഖമാണോ?"],
+    "എന്നെ സഹായിക്കാമ്മോ?": ["സഹായം ആവശ്യമുണ്ടോ? എന്ത് കാര്യമാണെന്ന് പറയൂ.", "ഞാൻ എപ്പോഴും സഹായിക്കാൻ തയ്യാറാണ്!"],
+    "പിന്നെ കാണാം": ["ഓക്കെ, ഷിഭുദിനം!", "പിന്നെ കാണാം!"],
+    "നന്ദി": ["സ്വാഗതം!", "അതിൽ പ്രശ്നമൊന്നുമില്ല!", "സഹായിക്കാൻ എനിക്ക് സന്തോഷമാണ്!"], 
+  എനിക്ക് സുഖമാണ്": [നല്ല കാര്യം!", "ആഹാ!", "ദൈവം അനുഗ്രഹിക്കട്ടേ!"]
+
 }
+
 
 # Function to get a chatbot response
 def get_chatbot_response(user_input):
