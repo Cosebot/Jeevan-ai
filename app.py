@@ -18,7 +18,8 @@ english_responses = {
     "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"], 
 "i am fine": ["Good to hear!", "Great man! ", " May god bless you!"]
 }
- malayalam_responses = {
+ # Corrected indentation for malayalam_responses
+malayalam_responses = {
     "ഹലോ": ["ഹലോ!", "സുഖമാണോ?", "എനിക്ക് നിങ്ങളെ സഹായിക്കാൻ കഴിയും!"],
     "സുഖമാണോ?": ["എനിക്ക്  സുഖമാണ്!", "നിങ്ങൾക്ക് സുഖമാണോ?"],
     "എന്നെ സഹായിക്കാമ്മോ?": ["സഹായം ആവശ്യമുണ്ടോ? എന്ത് കാര്യമാണെന്ന് പറയൂ.", "ഞാൻ എപ്പോഴും സഹായിക്കാൻ തയ്യാറാണ്!"],
@@ -26,8 +27,6 @@ english_responses = {
     "നന്ദി": ["സ്വാഗതം!", "അതിൽ പ്രശ്നമൊന്നുമില്ല!", "സഹായിക്കാൻ എനിക്ക് സന്തോഷമാണ്!"], 
     "എനിക്ക് സുഖമാണ്": ["നല്ല കാര്യം!", "ആഹാ!", "ദൈവം അനുഗ്രഹിക്കട്ടേ!"]
 }
-
-
 # Function to get a chatbot response
 def get_chatbot_response(user_input):
     user_input = user_input.lower().strip()
