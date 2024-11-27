@@ -18,7 +18,6 @@ english_responses = {
     "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"], 
 "i am fine": ["Good to hear!", "Great man! ", " May god bless you!"]
 }
-
  malayalam_responses = {
     "ഹലോ": ["ഹലോ!", "സുഖമാണോ?", "എനിക്ക് നിങ്ങളെ സഹായിക്കാൻ കഴിയും!"],
     "സുഖമാണോ?": ["എനിക്ക്  സുഖമാണ്!", "നിങ്ങൾക്ക് സുഖമാണോ?"],
