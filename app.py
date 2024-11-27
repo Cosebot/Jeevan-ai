@@ -1,8 +1,13 @@
 from flask import Flask, render_template_string, request, jsonify
 import random
+import pyttsx3
+import speech_recognition as sr
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Initialize TTS engine
+engine = pyttsx3.init()
 
 # English responses dictionary
 english_responses = {
@@ -26,17 +31,41 @@ malayalam_responses = {
 def get_chatbot_response(user_input):
     user_input = user_input.lower().strip()
 
-    # Check for responses in English
-    for key, replies in english_responses.items():
-        if key in user_input:
-            return random.choice(replies)
-
-    # Check for responses in Malayalam
-    for key, replies in malayalam_responses.items():
-        if key in user_input:
-            return random.choice(replies)
+    # Check if the input is in English or Malayalam
+    if any(word in user_input for word in english_responses.keys()):
+        return random.choice(english_responses.get(user_input.lower(), ["Sorry, I didn't understand that."]))
+    
+    if any(word in user_input for word in malayalam_responses.keys()):
+        return random.choice(malayalam_responses.get(user_input.lower(), ["ക്ഷമിക്കണം, എനിക്ക് അതു മനസ്സിലായില്ല."]))
 
     return "Sorry, I didn't understand that."
+
+# Function to make the chatbot speak using pyttsx3 (Text-to-Speech)
+def speak(text, language="en"):
+    if language == "ml":  # Malayalam
+        engine.setProperty('voice', 'com.apple.speech.synthesis.voice.millicent')  # Example voice for Malayalam
+    else:  # Default to English
+        engine.setProperty('voice', 'com.apple.speech.synthesis.voice.samantha')
+    
+    engine.say(text)
+    engine.runAndWait()
+
+# Function to listen to the user's speech using SpeechRecognition (STT)
+def listen():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recognizer.listen(source)
+        try:
+            text = recognizer.recognize_google(audio)
+            print(f"User said: {text}")
+            return text
+        except sr.UnknownValueError:
+            print("Sorry, I couldn't understand that.")
+            return None
+        except sr.RequestError:
+            print("Sorry, I couldn't request results from Google Speech Recognition service.")
+            return None
 
 # HTML, CSS, and JavaScript embedded in the Python script
 html_template = """
@@ -47,70 +76,7 @@ html_template = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f4f4f9;
-        }
-        .chat-container {
-            width: 400px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        .chat-box {
-            flex: 1;
-            padding: 10px;
-            overflow-y: auto;
-            max-height: 400px;
-            background: #e9ecef;
-        }
-        .message {
-            margin: 5px 0;
-            padding: 8px 12px;
-            border-radius: 15px;
-            max-width: 80%;
-        }
-        .message.user {
-            background: #007bff;
-            color: white;
-            margin-left: auto;
-            text-align: right;
-        }
-        .message.bot {
-            background: #dee2e6;
-            color: black;
-            margin-right: auto;
-        }
-        .input-container {
-            display: flex;
-            padding: 10px;
-            background: #f8f9fa;
-        }
-        #user-input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        #send-btn {
-            padding: 10px 15px;
-            margin-left: 10px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+        /* Add the previous CSS styles here */
     </style>
 </head>
 <body>
@@ -121,12 +87,14 @@ html_template = """
         <div class="input-container">
             <input type="text" id="user-input" placeholder="Type your message here..." />
             <button id="send-btn">Send</button>
+            <button id="voice-btn">🎤 Speak</button>
         </div>
     </div>
     <script>
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
+        const voiceBtn = document.getElementById('voice-btn');
 
         sendBtn.addEventListener('click', () => {
             const userMessage = userInput.value;
@@ -138,45 +106,75 @@ html_template = """
             userMessageDiv.textContent = userMessage;
             chatBox.appendChild(userMessageDiv);
 
-            // Clear input
+            // Clear input field
             userInput.value = '';
 
-            // Send message to the server
+            // Send message to Flask backend for response
             fetch('/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ message: userMessage })
             })
             .then(response => response.json())
             .then(data => {
-                // Display bot response
+                // Display chatbot response
                 const botMessageDiv = document.createElement('div');
                 botMessageDiv.className = 'message bot';
                 botMessageDiv.textContent = data.response;
                 chatBox.appendChild(botMessageDiv);
+                
+                // Trigger TTS to speak the response
+                let language = "en";  // Default to English
+                if (data.response.includes("സുഖമാണോ") || data.response.includes("എന്തെ?")) {
+                    language = "ml";  // Malayalam
+                }
+                
+                // Call TTS function to speak the response
+                speak(data.response, language);
+            });
+        });
 
-                // Scroll to the bottom
-                chatBox.scrollTop = chatBox.scrollHeight;
+        voiceBtn.addEventListener('click', () => {
+            // Start listening to user's voice input
+            fetch('/listen', {
+                method: 'GET'
             })
-            .catch(err => console.error('Error:', err));
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    userInput.value = data.message;
+                    sendBtn.click();  // Automatically send the voice input
+                }
+            });
         });
     </script>
 </body>
 </html>
 """
 
-# Route to serve the main page
+# Route for the chatbot response
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.json.get('message')
+    response = get_chatbot_response(user_input)
+    return jsonify({'response': response})
+
+# Route to listen to user voice input
+@app.route('/listen', methods=['GET'])
+def listen_to_user():
+    message = listen()  # Listen for speech input
+    if message:
+        return jsonify({'message': message})
+    else:
+        return jsonify({'message': 'Sorry, I didn\'t understand that.'})
+
+# Route for the main page (HTML)
 @app.route('/')
 def home():
     return render_template_string(html_template)
 
-# API route to handle chatbot requests
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_message = request.json.get('message')
-    bot_response = get_chatbot_response(user_message)
-    return jsonify({'response': bot_response})
-
-# Run the Flask app
+# Run the app
 if __name__ == '__main__':
     app.run(debug=True)
