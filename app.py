@@ -1,13 +1,10 @@
 from flask import Flask, render_template_string, request, jsonify
 import random
-import pyttsx3
-import speech_recognition as sr
+from gtts import gTTS
+import os
 
 # Initialize Flask app
 app = Flask(__name__)
-
-# Initialize TTS engine
-engine = pyttsx3.init()
 
 # English responses dictionary
 english_responses = {
@@ -16,56 +13,24 @@ english_responses = {
     "help": ["Sure! What do you need help with?", "I'm here to assist you."],
     "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!"],
     "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"], 
-"i am fine": ["Good to hear!", "Great man! ", " May god bless you!"]
+    "i am fine": ["Good to hear!", "Great man! ", " May god bless you!"]
 }
- # Corrected indentation for malayalam_responses
-malayalam_responses = {
-    "ഹലോ": ["ഹലോ!", "സുഖമാണോ?", "എനിക്ക് നിങ്ങളെ സഹായിക്കാൻ കഴിയും!"],
-    "സുഖമാണോ?": ["എനിക്ക്  സുഖമാണ്!", "നിങ്ങൾക്ക് സുഖമാണോ?"],
-    "എന്നെ സഹായിക്കാമ്മോ?": ["സഹായം ആവശ്യമുണ്ടോ? എന്ത് കാര്യമാണെന്ന് പറയൂ.", "ഞാൻ എപ്പോഴും സഹായിക്കാൻ തയ്യാറാണ്!"],
-    "പിന്നെ കാണാം": ["ഓക്കെ, ഷിഭുദിനം!", "പിന്നെ കാണാം!"],
-    "നന്ദി": ["സ്വാഗതം!", "അതിൽ പ്രശ്നമൊന്നുമില്ല!", "സഹായിക്കാൻ എനിക്ക് സന്തോഷമാണ്!"], 
-    "എനിക്ക് സുഖമാണ്": ["നല്ല കാര്യം!", "ആഹാ!", "ദൈവം അനുഗ്രഹിക്കട്ടേ!"]
-}
+
 # Function to get a chatbot response
 def get_chatbot_response(user_input):
     user_input = user_input.lower().strip()
 
-    # Check if the input is in English or Malayalam
+    # Check if the input is in English
     if any(word in user_input for word in english_responses.keys()):
         return random.choice(english_responses.get(user_input.lower(), ["Sorry, I didn't understand that."]))
-    
-    if any(word in user_input for word in malayalam_responses.keys()):
-        return random.choice(malayalam_responses.get(user_input.lower(), ["ക്ഷമിക്കണം, എനിക്ക് അതു മനസ്സിലായില്ല."]))
 
     return "Sorry, I didn't understand that."
 
-# Function to make the chatbot speak using pyttsx3 (Text-to-Speech)
+# Function to make the chatbot speak using gTTS (Google Text-to-Speech)
 def speak(text, language="en"):
-    if language == "ml":  # Malayalam
-        engine.setProperty('voice', 'com.apple.speech.synthesis.voice.millicent')  # Example voice for Malayalam
-    else:  # Default to English
-        engine.setProperty('voice', 'com.apple.speech.synthesis.voice.samantha')
-    
-    engine.say(text)
-    engine.runAndWait()
-
-# Function to listen to the user's speech using SpeechRecognition (STT)
-def listen():
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        print("Listening...")
-        audio = recognizer.listen(source)
-        try:
-            text = recognizer.recognize_google(audio)
-            print(f"User said: {text}")
-            return text
-        except sr.UnknownValueError:
-            print("Sorry, I couldn't understand that.")
-            return None
-        except sr.RequestError:
-            print("Sorry, I couldn't request results from Google Speech Recognition service.")
-            return None
+    tts = gTTS(text=text, lang=language)
+    tts.save("response.mp3")  # Save the speech as an MP3 file
+    os.system("start response.mp3")  # Play the speech on Windows, use 'afplay' on macOS or 'mpg321' on Linux
 
 # HTML, CSS, and JavaScript embedded in the Python script
 html_template = """
@@ -87,14 +52,12 @@ html_template = """
         <div class="input-container">
             <input type="text" id="user-input" placeholder="Type your message here..." />
             <button id="send-btn">Send</button>
-            <button id="voice-btn">🎤 Speak</button>
         </div>
     </div>
     <script>
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
-        const voiceBtn = document.getElementById('voice-btn');
 
         sendBtn.addEventListener('click', () => {
             const userMessage = userInput.value;
@@ -127,26 +90,9 @@ html_template = """
                 
                 // Trigger TTS to speak the response
                 let language = "en";  // Default to English
-                if (data.response.includes("സുഖമാണോ") || data.response.includes("എന്തെ?")) {
-                    language = "ml";  // Malayalam
-                }
                 
                 // Call TTS function to speak the response
-                speak(data.response, language);
-            });
-        });
-
-        voiceBtn.addEventListener('click', () => {
-            // Start listening to user's voice input
-            fetch('/listen', {
-                method: 'GET'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    userInput.value = data.message;
-                    sendBtn.click();  // Automatically send the voice input
-                }
+                fetch(`/speak?text=${encodeURIComponent(data.response)}&language=${language}`);
             });
         });
     </script>
@@ -161,14 +107,13 @@ def chat():
     response = get_chatbot_response(user_input)
     return jsonify({'response': response})
 
-# Route to listen to user voice input
-@app.route('/listen', methods=['GET'])
-def listen_to_user():
-    message = listen()  # Listen for speech input
-    if message:
-        return jsonify({'message': message})
-    else:
-        return jsonify({'message': 'Sorry, I didn\'t understand that.'})
+# Route to generate TTS and play the response
+@app.route('/speak', methods=['GET'])
+def speak_text():
+    text = request.args.get('text', '')
+    language = request.args.get('language', 'en')
+    speak(text, language)
+    return jsonify({'status': 'speaking'})
 
 # Route for the main page (HTML)
 @app.route('/')
