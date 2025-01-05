@@ -182,17 +182,20 @@ html_template = """
         });
 
         voiceBtn.addEventListener('click', () => {
-            // Start listening to user's voice input
-            fetch('/listen', {
-                method: 'GET'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    userInput.value = data.message;
-                    sendBtn.click();  // Automatically send the voice input
-                }
-            });
+            // Start listening to user's voice input using the Web Speech API
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-US';  // Set the language for recognition
+            recognition.start();
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                userInput.value = transcript;
+                sendBtn.click();  // Automatically send the voice input
+            };
+
+            recognition.onerror = (event) => {
+                console.log('Speech recognition error:', event.error);
+            };
         });
     </script>
 </body>
