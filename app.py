@@ -1,7 +1,8 @@
-from flask import Flask, render_template_string, request, jsonify
-import random
+from flask import Flask, render_template_string, request, jsonify, send_file
 from gtts import gTTS
 import os
+import platform
+import random
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -20,7 +21,6 @@ english_responses = {
 def get_chatbot_response(user_input):
     user_input = user_input.lower().strip()
 
-    # Check if the input is in English
     if any(word in user_input for word in english_responses.keys()):
         return random.choice(english_responses.get(user_input.lower(), ["Sorry, I didn't understand that."]))
 
@@ -28,9 +28,42 @@ def get_chatbot_response(user_input):
 
 # Function to make the chatbot speak using gTTS (Google Text-to-Speech)
 def speak(text, language="en"):
+    # Generate speech with Google TTS
     tts = gTTS(text=text, lang=language)
     tts.save("response.mp3")  # Save the speech as an MP3 file
-    os.system("start response.mp3")  # Play the speech on Windows, use 'afplay' on macOS or 'mpg321' on Linux
+
+    # Platform-specific commands to play the MP3 file
+    current_platform = platform.system().lower()
+
+    if current_platform == "windows":
+        os.system("start response.mp3")  # Windows command
+    elif current_platform == "darwin":  # macOS
+        os.system("afplay response.mp3")  # macOS command
+    elif current_platform == "linux" or current_platform == "linux2":
+        os.system("mpg321 response.mp3")  # Linux command (ensure mpg321 is installed)
+    else:
+        print("Platform not supported for automatic audio playback.")
+
+# Route for the chatbot response
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.json.get('message')
+    response = get_chatbot_response(user_input)
+    return jsonify({'response': response})
+
+# Route to serve the audio file to the client for playback
+@app.route('/speak', methods=['GET'])
+def speak_text():
+    text = request.args.get('text', '')
+    language = request.args.get('language', 'en')
+    tts = gTTS(text=text, lang=language)
+    
+    # Save the MP3 in a temporary file
+    temp_mp3_path = "response.mp3"
+    tts.save(temp_mp3_path)
+    
+    # Serve the MP3 file as a response
+    return send_file(temp_mp3_path, mimetype='audio/mpeg', as_attachment=False)
 
 # HTML, CSS, and JavaScript embedded in the Python script
 html_template = """
@@ -41,7 +74,54 @@ html_template = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
     <style>
-        /* Add the previous CSS styles here */
+        .chat-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            background-color: #f0f0f0;
+        }
+        .chat-box {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: scroll;
+            max-height: 80%;
+            background-color: white;
+        }
+        .input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #fff;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            margin-left: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 5px 10px;
+            border-radius: 10px;
+            max-width: 70%;
+        }
+        .user {
+            background-color: #cfe2f3;
+            align-self: flex-end;
+        }
+        .bot {
+            background-color: #e9ecef;
+            align-self: flex-start;
+        }
     </style>
 </head>
 <body>
@@ -52,12 +132,14 @@ html_template = """
         <div class="input-container">
             <input type="text" id="user-input" placeholder="Type your message here..." />
             <button id="send-btn">Send</button>
+            <button id="voice-btn">🎤 Speak</button>
         </div>
     </div>
     <script>
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
+        const voiceBtn = document.getElementById('voice-btn');
 
         sendBtn.addEventListener('click', () => {
             const userMessage = userInput.value;
@@ -90,30 +172,32 @@ html_template = """
                 
                 // Trigger TTS to speak the response
                 let language = "en";  // Default to English
-                
-                // Call TTS function to speak the response
-                fetch(`/speak?text=${encodeURIComponent(data.response)}&language=${language}`);
+                fetch(`/speak?text=${encodeURIComponent(data.response)}&language=${language}`)
+                .then(response => response.blob())
+                .then(blob => {
+                    const audio = new Audio(URL.createObjectURL(blob));
+                    audio.play();
+                });
+            });
+        });
+
+        voiceBtn.addEventListener('click', () => {
+            // Start listening to user's voice input
+            fetch('/listen', {
+                method: 'GET'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    userInput.value = data.message;
+                    sendBtn.click();  // Automatically send the voice input
+                }
             });
         });
     </script>
 </body>
 </html>
 """
-
-# Route for the chatbot response
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_input = request.json.get('message')
-    response = get_chatbot_response(user_input)
-    return jsonify({'response': response})
-
-# Route to generate TTS and play the response
-@app.route('/speak', methods=['GET'])
-def speak_text():
-    text = request.args.get('text', '')
-    language = request.args.get('language', 'en')
-    speak(text, language)
-    return jsonify({'status': 'speaking'})
 
 # Route for the main page (HTML)
 @app.route('/')
