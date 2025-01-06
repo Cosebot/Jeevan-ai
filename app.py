@@ -76,8 +76,6 @@ html_template = """
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #000;
-            color: #fff;
             margin: 0;
             padding: 0;
         }
@@ -87,31 +85,30 @@ html_template = """
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            background-color: #000;
         }
         .chat-box {
             flex-grow: 1;
             padding: 10px;
-            overflow-y: scroll;
+            overflow-y: auto;
             max-height: 80%;
-            background-color: #111;
+            background-color: var(--background-color);
         }
         .input-container {
             display: flex;
             padding: 10px;
-            background-color: #111;
+            background-color: var(--background-color);
         }
         #user-input {
             flex-grow: 1;
             padding: 10px;
             border-radius: 5px;
-            background-color: #333;
-            border: 1px solid #444;
-            color: #fff;
+            border: 1px solid var(--text-color);
+            background-color: var(--input-bg-color);
+            color: var(--text-color);
         }
         button {
-            background-color: #007bff;
-            color: white;
+            background-color: var(--button-bg-color);
+            color: var(--button-text-color);
             padding: 10px;
             margin-left: 10px;
             border: none;
@@ -120,77 +117,65 @@ html_template = """
         }
         .message {
             margin: 5px 0;
-            padding: 5px 10px;
+            padding: 10px;
             border-radius: 10px;
             max-width: 70%;
+            color: var(--text-color);
         }
         .user {
-            background-color: #444;
+            background-color: var(--user-bg-color);
             align-self: flex-end;
         }
         .bot {
-            background-color: #555;
+            background-color: var(--bot-bg-color);
             align-self: flex-start;
         }
-        /* Hamburger Menu Styles */
-        .menu-icon {
-            display: none;
-            flex-direction: column;
-            cursor: pointer;
-            position: absolute;
-            top: 20px;
-            left: 20px;
-        }
-        .menu-icon div {
-            background-color: #fff;
-            height: 4px;
-            width: 30px;
-            margin: 5px 0;
-            transition: 0.3s;
-        }
-        .hamburger-menu {
+        .theme-selector {
             display: flex;
-            flex-direction: column;
-            position: absolute;
-            top: 0;
-            left: 0;
-            background-color: #222;
-            width: 200px;
-            height: 100vh;
-            transform: translateX(-200px);
-            transition: transform 0.3s ease;
+            justify-content: center;
+            padding: 10px;
+            background-color: var(--background-color);
         }
-        .hamburger-menu a {
-            color: #fff;
-            padding: 15px;
+        .theme-selector button {
+            margin: 5px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .theme-selector .diamond { background-color: lightblue; }
+        .theme-selector .sakura { background-color: pink; }
+        .theme-selector .gold { background-color: yellow; }
+        .theme-selector .cloud { background-color: white; color: black; }
+        .theme-selector .ant { background-color: black; color: white; }
+
+        .contact-us {
+            padding: 20px;
+            background-color: var(--background-color);
+            text-align: center;
+            border-top: 1px solid var(--text-color);
+        }
+        .contact-us p {
+            margin: 5px 0;
+            color: var(--text-color);
+        }
+        .contact-us a {
+            color: var(--button-bg-color);
             text-decoration: none;
-            font-size: 18px;
-            border-bottom: 1px solid #444;
+            font-weight: bold;
         }
-        .hamburger-menu a:hover {
-            background-color: #444;
-        }
-        .hamburger-menu.open {
-            transform: translateX(0);
-        }
-        @media screen and (max-width: 768px) {
-            .menu-icon {
-                display: flex;
-            }
+        .contact-us a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <!-- Hamburger Menu -->
-    <div class="menu-icon" id="menu-icon">
-        <div></div>
-        <div></div>
-        <div></div>
-    </div>
-    <div class="hamburger-menu" id="hamburger-menu">
-        <a href="#">Home</a>
-        <a href="#">About</a>
-        <a href="#">Contact</a>
+    <div class="theme-selector">
+        <button class="diamond" onclick="setTheme('diamond')">Diamond</button>
+        <button class="sakura" onclick="setTheme('sakura')">Sakura</button>
+        <button class="gold" onclick="setTheme('gold')">Gold</button>
+        <button class="cloud" onclick="setTheme('cloud')">Cloud</button>
+        <button class="ant" onclick="setTheme('ant')">Ant</button>
     </div>
 
     <div class="chat-container">
@@ -204,85 +189,79 @@ html_template = """
         </div>
     </div>
 
+    <div class="contact-us">
+        <p>CEO and Main Admin of Bot</p>
+        <p><a href="mailto:hazanulashkar@gmail.com">hazanulashkar@gmail.com</a></p>
+    </div>
+
     <script>
-        const chatBox = document.getElementById('chat-box');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-        const voiceBtn = document.getElementById('voice-btn');
-        const menuIcon = document.getElementById('menu-icon');
-        const hamburgerMenu = document.getElementById('hamburger-menu');
+        // Theme colors
+        const themes = {
+            diamond: {
+                '--background-color': 'lightblue',
+                '--text-color': '#000',
+                '--button-bg-color': '#0056b3',
+                '--button-text-color': '#fff',
+                '--input-bg-color': '#e0f7fa',
+                '--user-bg-color': '#0288d1',
+                '--bot-bg-color': '#b3e5fc'
+            },
+            sakura: {
+                '--background-color': 'pink',
+                '--text-color': '#000',
+                '--button-bg-color': '#ad1457',
+                '--button-text-color': '#fff',
+                '--input-bg-color': '#f8bbd0',
+                '--user-bg-color': '#880e4f',
+                '--bot-bg-color': '#f48fb1'
+            },
+            gold: {
+                '--background-color': 'yellow',
+                '--text-color': '#000',
+                '--button-bg-color': '#f57f17',
+                '--button-text-color': '#fff',
+                '--input-bg-color': '#fff9c4',
+                '--user-bg-color': '#ffab00',
+                '--bot-bg-color': '#ffe082'
+            },
+            cloud: {
+                '--background-color': 'white',
+                '--text-color': '#000',
+                '--button-bg-color': '#607d8b',
+                '--button-text-color': '#fff',
+                '--input-bg-color': '#f5f5f5',
+                '--user-bg-color': '#cfd8dc',
+                '--bot-bg-color': '#eceff1'
+            },
+            ant: {
+                '--background-color': 'black',
+                '--text-color': '#fff',
+                '--button-bg-color': '#424242',
+                '--button-text-color': '#fff',
+                '--input-bg-color': '#616161',
+                '--user-bg-color': '#757575',
+                '--bot-bg-color': '#9e9e9e'
+            }
+        };
 
-        // Toggle Hamburger Menu
-        menuIcon.addEventListener('click', () => {
-            hamburgerMenu.classList.toggle('open');
-        });
+        // Function to apply a theme
+        function setTheme(themeName) {
+            const theme = themes[themeName];
+            for (const property in theme) {
+                document.documentElement.style.setProperty(property, theme[property]);
+            }
+        }
 
-        sendBtn.addEventListener('click', () => {
-            const userMessage = userInput.value;
-            if (!userMessage.trim()) return;
-
-            // Display user message
-            const userMessageDiv = document.createElement('div');
-            userMessageDiv.className = 'message user';
-            userMessageDiv.textContent = userMessage;
-            chatBox.appendChild(userMessageDiv);
-
-            // Clear input field
-            userInput.value = '';
-
-            // Send message to Flask backend for response
-            fetch('/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: userMessage })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Display chatbot response
-                const botMessageDiv = document.createElement('div');
-                botMessageDiv.className = 'message bot';
-                botMessageDiv.textContent = data.response;
-                chatBox.appendChild(botMessageDiv);
-                
-                // Trigger TTS to speak the response
-                let language = "en";  // Default to English
-                fetch(`/speak?text=${encodeURIComponent(data.response)}&language=${language}`)
-                .then(response => response.blob())
-                .then(blob => {
-                    const audio = new Audio(URL.createObjectURL(blob));
-                    audio.play();
-                });
-            });
-        });
-
-        voiceBtn.addEventListener('click', () => {
-            // Start listening to user's voice input using the Web Speech API
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = 'en-US';  // Set the language for recognition
-            recognition.start();
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                userInput.value = transcript;
-                sendBtn.click();  // Automatically send the voice input
-            };
-
-            recognition.onerror = (event) => {
-                console.log('Speech recognition error:', event.error);
-            };
-        });
+        // Default theme
+        setTheme('diamond');
     </script>
 </body>
 </html>
 """
 
-# Route for the main page (HTML)
 @app.route('/')
 def home():
     return render_template_string(html_template)
 
-# Run the app
 if __name__ == '__main__':
     app.run(debug=True)
