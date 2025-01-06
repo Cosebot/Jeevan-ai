@@ -287,6 +287,7 @@ html_template = """
             padding: 0;
             font-family: Arial, sans-serif;
         }
+
         /* Chat container */
         .chat-container {
             width: 100%;
@@ -296,6 +297,7 @@ html_template = """
             justify-content: flex-end;
             background-color: #f0f0f0;
         }
+
         .chat-box {
             flex-grow: 1;
             padding: 10px;
@@ -303,99 +305,124 @@ html_template = """
             max-height: 80%;
             background-color: white;
         }
+
         .input-container {
             display: flex;
             padding: 10px;
             background-color: #fff;
         }
+
         #user-input {
             flex-grow: 1;
             padding: 10px;
             border-radius: 5px;
         }
+
         button {
-                background-color: #4CAF50;
-                color: white;
-                padding: 10px;
-                border: none;
-                cursor: pointer;
-                border-radius: 5px;
-            }
-            button:hover {
-                background-color: #45a049;
-            }
-            .chat-message {
-                padding: 10px;
-                margin: 10px 0;
-                border-radius: 5px;
-            }
-            .user-message {
-                background-color: #e1ffc7;
-                text-align: right;
-            }
-            .bot-message {
-                background-color: #f1f1f1;
-                text-align: left;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="chat-container">
-            <div class="chat-box" id="chat-box"></div>
-            <div class="input-container">
-                <input type="text" id="user-input" placeholder="Type a message..." oninput="checkInput()" />
-                <button id="send-btn" onclick="sendMessage()" disabled>Send</button>
-            </div>
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .chat-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .user-message {
+            background-color: #e1ffc7;
+            text-align: right;
+        }
+
+        .bot-message {
+            background-color: #f1f1f1;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-box" id="chat-box"></div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Type a message..." oninput="checkInput()" />
+            <button id="send-btn" onclick="sendMessage()" disabled>Send</button>
         </div>
+    </div>
 
-        <script>
-            const chatBox = document.getElementById('chat-box');
-            const userInput = document.getElementById('user-input');
-            const sendBtn = document.getElementById('send-btn');
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
 
-            // Function to check if user input is not empty
-            function checkInput() {
-                sendBtn.disabled = userInput.value.trim() === '';
-            }
+        // Function to check if user input is not empty
+        function checkInput() {
+            sendBtn.disabled = userInput.value.trim() === '';
+        }
 
-            // Function to send a message
-            async function sendMessage() {
-                const userMessage = userInput.value.trim();
-                if (userMessage === '') return;
+        // Function to send a message
+        async function sendMessage() {
+            const userMessage = userInput.value.trim();
+            if (userMessage === '') return;
 
-                // Display user message
-                addMessage(userMessage, 'user');
-                userInput.value = '';
-                checkInput();
+            // Display user message
+            addMessage(userMessage, 'user');
+            userInput.value = '';
+            checkInput();
 
-                // Get bot response
-                const response = await getChatbotResponse(userMessage);
-                addMessage(response, 'bot');
+            // Get bot response
+            const response = await getChatbotResponse(userMessage);
+            addMessage(response, 'bot');
 
-                // Scroll to the bottom
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
+            // Scroll to the bottom
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
 
-            // Function to get chatbot response
-            async function getChatbotResponse(userMessage) {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: userMessage })
-                });
-                const data = await response.json();
-                return data.response;
-            }
+        // Function to get chatbot response
+        async function getChatbotResponse(userMessage) {
+            const response = await fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userMessage })
+            });
+            const data = await response.json();
+            return data.response;
+        }
 
-            // Function to add a message to the chat
-            function addMessage(message, sender) {
-                const messageElement = document.createElement('div');
-                messageElement.classList.add('chat-message', sender === 'user' ? 'user-message' : 'bot-message');
-                messageElement.textContent = message;
-                chatBox.appendChild(messageElement);
-            }
-        </script>
-    </body>
+        // Function to add a message to the chat
+        function addMessage(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chat-message', sender === 'user' ? 'user-message' : 'bot-message');
+            messageElement.textContent = message;
+            chatBox.appendChild(messageElement);
+        }
+    </script>
+</body>
 </html>
+"""
+
+# Flask setup (assuming Flask is being used)
+from flask import Flask, render_template, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return html_template
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_message = request.json['message']
+    # Example response, you should replace this with actual chatbot logic
+    bot_response = f"Bot response to: {user_message}"
+    return jsonify({'response': bot_response})
+
 if __name__ == '__main__':
     app.run(debug=True)
