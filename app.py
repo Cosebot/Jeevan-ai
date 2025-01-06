@@ -20,52 +20,29 @@ english_responses = {
 # Function to get a chatbot response
 def get_chatbot_response(user_input):
     user_input = user_input.lower().strip()
-
-    if any(word in user_input for word in english_responses.keys()):
-        return random.choice(english_responses.get(user_input.lower(), ["Sorry, I didn't understand that."]))
-
+    for key, responses in english_responses.items():
+        if key in user_input:
+            return random.choice(responses)
     return "Sorry, I didn't understand that."
 
-# Function to make the chatbot speak using gTTS (Google Text-to-Speech)
-def speak(text, language="en"):
-    # Generate speech with Google TTS
-    tts = gTTS(text=text, lang=language)
-    tts.save("response.mp3")  # Save the speech as an MP3 file
-
-    # Platform-specific commands to play the MP3 file
-    current_platform = platform.system().lower()
-
-    if current_platform == "windows":
-        os.system("start response.mp3")  # Windows command
-    elif current_platform == "darwin":  # macOS
-        os.system("afplay response.mp3")  # macOS command
-    elif current_platform == "linux" or current_platform == "linux2":
-        os.system("mpg321 response.mp3")  # Linux command (ensure mpg321 is installed)
-    else:
-        print("Platform not supported for automatic audio playback.")
-
-# Route for the chatbot response
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_input = request.json.get('message')
-    response = get_chatbot_response(user_input)
-    return jsonify({'response': response})
-
-# Route to serve the audio file to the client for playback
+# Function to generate speech using gTTS
 @app.route('/speak', methods=['GET'])
 def speak_text():
     text = request.args.get('text', '')
     language = request.args.get('language', 'en')
     tts = gTTS(text=text, lang=language)
-    
-    # Save the MP3 in a temporary file
     temp_mp3_path = "response.mp3"
     tts.save(temp_mp3_path)
-    
-    # Serve the MP3 file as a response
     return send_file(temp_mp3_path, mimetype='audio/mpeg', as_attachment=False)
 
-# HTML, CSS, and JavaScript embedded in the Python script
+# Chat route
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.json.get('message', '')
+    response = get_chatbot_response(user_input)
+    return jsonify({'response': response})
+
+# HTML Template
 html_template = """
 <!DOCTYPE html>
 <html lang="en">
@@ -74,186 +51,82 @@ html_template = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .chat-container {
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-        }
-        .chat-box {
-            flex-grow: 1;
-            padding: 10px;
-            overflow-y: auto;
-            max-height: 80%;
-            background-color: var(--background-color);
-        }
-        .input-container {
-            display: flex;
-            padding: 10px;
-            background-color: var(--background-color);
-        }
-        #user-input {
-            flex-grow: 1;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid var(--text-color);
-            background-color: var(--input-bg-color);
-            color: var(--text-color);
-        }
-        button {
-            background-color: var(--button-bg-color);
-            color: var(--button-text-color);
-            padding: 10px;
-            margin-left: 10px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        .message {
-            margin: 5px 0;
-            padding: 10px;
-            border-radius: 10px;
-            max-width: 70%;
-            color: var(--text-color);
-        }
-        .user {
-            background-color: var(--user-bg-color);
-            align-self: flex-end;
-        }
-        .bot {
-            background-color: var(--bot-bg-color);
-            align-self: flex-start;
-        }
-        .theme-selector {
-            display: flex;
-            justify-content: center;
-            padding: 10px;
-            background-color: var(--background-color);
-        }
-        .theme-selector button {
-            margin: 5px;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .theme-selector .diamond { background-color: lightblue; }
-        .theme-selector .sakura { background-color: pink; }
-        .theme-selector .gold { background-color: yellow; }
-        .theme-selector .cloud { background-color: white; color: black; }
-        .theme-selector .ant { background-color: black; color: white; }
-
-        .contact-us {
-            padding: 20px;
-            background-color: var(--background-color);
-            text-align: center;
-            border-top: 1px solid var(--text-color);
-        }
-        .contact-us p {
-            margin: 5px 0;
-            color: var(--text-color);
-        }
-        .contact-us a {
-            color: var(--button-bg-color);
-            text-decoration: none;
-            font-weight: bold;
-        }
-        .contact-us a:hover {
-            text-decoration: underline;
-        }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: #fff; }
+        .chat-container { display: flex; flex-direction: column; height: 100vh; }
+        .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; background-color: #111; }
+        .input-container { display: flex; padding: 10px; background-color: #111; }
+        #user-input { flex-grow: 1; padding: 10px; border: none; border-radius: 5px; background-color: #333; color: #fff; }
+        button { margin-left: 10px; padding: 10px; background-color: #007bff; border: none; border-radius: 5px; color: #fff; cursor: pointer; }
+        .message { margin: 5px 0; padding: 10px; border-radius: 10px; max-width: 70%; }
+        .user { align-self: flex-end; background-color: #444; }
+        .bot { align-self: flex-start; background-color: #555; }
+        .hamburger-menu { position: fixed; left: 0; top: 0; width: 200px; height: 100vh; background-color: #222; display: none; flex-direction: column; }
+        .menu-item { color: #fff; padding: 10px; border-bottom: 1px solid #444; cursor: pointer; }
+        .menu-item:hover { background-color: #333; }
+        #hamburger { position: fixed; left: 10px; top: 10px; cursor: pointer; color: #fff; font-size: 24px; }
+        .theme-buttons { display: flex; flex-direction: column; margin: 10px; }
+        .theme-buttons button { margin: 5px 0; }
     </style>
 </head>
 <body>
-    <div class="theme-selector">
-        <button class="diamond" onclick="setTheme('diamond')">Diamond</button>
-        <button class="sakura" onclick="setTheme('sakura')">Sakura</button>
-        <button class="gold" onclick="setTheme('gold')">Gold</button>
-        <button class="cloud" onclick="setTheme('cloud')">Cloud</button>
-        <button class="ant" onclick="setTheme('ant')">Ant</button>
-    </div>
-
-    <div class="chat-container">
-        <div id="chat-box" class="chat-box">
-            <!-- Chat messages will appear here -->
+    <div id="hamburger">☰</div>
+    <div class="hamburger-menu" id="menu">
+        <div class="menu-item">Home</div>
+        <div class="menu-item">Settings
+            <div class="theme-buttons">
+                <button onclick="setTheme('diamond')">Diamond</button>
+                <button onclick="setTheme('sakura')">Sakura</button>
+                <button onclick="setTheme('gold')">Gold</button>
+                <button onclick="setTheme('cloud')">Cloud</button>
+                <button onclick="setTheme('ant')">Ant</button>
+            </div>
         </div>
+        <div class="menu-item"><a href="mailto:hazanulashkar@gmail.com" style="color: inherit;">Contact Us</a></div>
+    </div>
+    <div class="chat-container">
+        <div id="chat-box" class="chat-box"></div>
         <div class="input-container">
-            <input type="text" id="user-input" placeholder="Type your message here..." />
+            <input id="user-input" type="text" placeholder="Type a message..." />
             <button id="send-btn">Send</button>
             <button id="voice-btn">🎤 Speak</button>
         </div>
     </div>
 
-    <div class="contact-us">
-        <p>CEO and Main Admin of Bot</p>
-        <p><a href="mailto:hazanulashkar@gmail.com">hazanulashkar@gmail.com</a></p>
-    </div>
-
     <script>
-        // Theme colors
         const themes = {
-            diamond: {
-                '--background-color': 'lightblue',
-                '--text-color': '#000',
-                '--button-bg-color': '#0056b3',
-                '--button-text-color': '#fff',
-                '--input-bg-color': '#e0f7fa',
-                '--user-bg-color': '#0288d1',
-                '--bot-bg-color': '#b3e5fc'
-            },
-            sakura: {
-                '--background-color': 'pink',
-                '--text-color': '#000',
-                '--button-bg-color': '#ad1457',
-                '--button-text-color': '#fff',
-                '--input-bg-color': '#f8bbd0',
-                '--user-bg-color': '#880e4f',
-                '--bot-bg-color': '#f48fb1'
-            },
-            gold: {
-                '--background-color': 'yellow',
-                '--text-color': '#000',
-                '--button-bg-color': '#f57f17',
-                '--button-text-color': '#fff',
-                '--input-bg-color': '#fff9c4',
-                '--user-bg-color': '#ffab00',
-                '--bot-bg-color': '#ffe082'
-            },
-            cloud: {
-                '--background-color': 'white',
-                '--text-color': '#000',
-                '--button-bg-color': '#607d8b',
-                '--button-text-color': '#fff',
-                '--input-bg-color': '#f5f5f5',
-                '--user-bg-color': '#cfd8dc',
-                '--bot-bg-color': '#eceff1'
-            },
-            ant: {
-                '--background-color': 'black',
-                '--text-color': '#fff',
-                '--button-bg-color': '#424242',
-                '--button-text-color': '#fff',
-                '--input-bg-color': '#616161',
-                '--user-bg-color': '#757575',
-                '--bot-bg-color': '#9e9e9e'
-            }
+            diamond: { '--bg-color': 'lightblue', '--text-color': '#000' },
+            sakura: { '--bg-color': 'pink', '--text-color': '#000' },
+            gold: { '--bg-color': 'yellow', '--text-color': '#000' },
+            cloud: { '--bg-color': '#fff', '--text-color': '#000' },
+            ant: { '--bg-color': '#000', '--text-color': '#fff' }
         };
 
-        // Function to apply a theme
-        function setTheme(themeName) {
-            const theme = themes[themeName];
-            for (const property in theme) {
-                document.documentElement.style.setProperty(property, theme[property]);
-            }
+        const menu = document.getElementById('menu');
+        document.getElementById('hamburger').addEventListener('click', () => {
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        function setTheme(theme) {
+            document.body.style.backgroundColor = themes[theme]['--bg-color'];
+            document.body.style.color = themes[theme]['--text-color'];
         }
 
-        // Default theme
-        setTheme('diamond');
+        document.getElementById('send-btn').addEventListener('click', () => {
+            const input = document.getElementById('user-input').value;
+            if (!input) return;
+            fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const botDiv = document.createElement('div');
+                botDiv.textContent = data.response;
+                botDiv.className = 'message bot';
+                document.getElementById('chat-box').appendChild(botDiv);
+            });
+        });
     </script>
 </body>
 </html>
