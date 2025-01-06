@@ -40,6 +40,11 @@ def chat():
     response = get_chatbot_response(user_input)
     return jsonify({'response': response})
 
+# Home route (for the Home button)
+@app.route('/')
+def home():
+    return render_template_string(html_template)
+
 # HTML Template
 html_template = """
 <!DOCTYPE html>
@@ -49,9 +54,9 @@ html_template = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sanji AI</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: #fff; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: #fff; transition: all 0.3s ease; }
         .chat-container { display: flex; flex-direction: column; height: 100vh; }
-        .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; background-color: #111; }
+        .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; background-color: #111; display: flex; flex-direction: column-reverse; }
         .input-container { display: flex; padding: 10px; background-color: #111; }
         #user-input { flex-grow: 1; padding: 10px; border: none; border-radius: 5px; background-color: #333; color: #fff; }
         button { margin-left: 10px; padding: 10px; background-color: #007bff; border: none; border-radius: 5px; color: #fff; cursor: pointer; }
@@ -64,34 +69,9 @@ html_template = """
         #hamburger { position: fixed; left: 10px; top: 10px; cursor: pointer; color: #fff; font-size: 24px; }
         .theme-buttons { display: flex; flex-direction: column; margin: 10px; }
         .theme-buttons button { margin: 5px 0; }
-        
-        /* Scrolling Text */
-        .scrolling-text {
-            position: fixed;
-            top: 0;
-            left: 100%;
-            white-space: nowrap;
-            animation: scroll 10s linear infinite;
-            font-size: 24px;
-            color: #ff6347; /* Tomato color */
-            padding: 10px 0;
-            font-weight: bold;
-        }
-
-        @keyframes scroll {
-            0% {
-                left: 100%;
-            }
-            100% {
-                left: -100%;
-            }
-        }
     </style>
 </head>
 <body>
-    <!-- Scrolling Text -->
-    <div class="scrolling-text">Welcome to Sanji AI</div>
-
     <div id="hamburger">☰</div>
     <div class="hamburger-menu" id="menu">
         <div class="menu-item">Home</div>
@@ -117,11 +97,11 @@ html_template = """
 
     <script>
         const themes = {
-            diamond: { '--bg-color': 'lightblue', '--text-color': '#000' },
-            sakura: { '--bg-color': 'pink', '--text-color': '#000' },
-            gold: { '--bg-color': 'yellow', '--text-color': '#000' },
-            cloud: { '--bg-color': '#fff', '--text-color': '#000' },
-            ant: { '--bg-color': '#000', '--text-color': '#fff' }
+            diamond: { '--bg-color': 'lightblue', '--text-color': '#000', '--chat-bg': '#e0f7fa' },
+            sakura: { '--bg-color': 'pink', '--text-color': '#000', '--chat-bg': '#ffebee' },
+            gold: { '--bg-color': 'yellow', '--text-color': '#000', '--chat-bg': '#fff9c4' },
+            cloud: { '--bg-color': '#fff', '--text-color': '#000', '--chat-bg': '#f1f1f1' },
+            ant: { '--bg-color': '#000', '--text-color': '#fff', '--chat-bg': '#333' }
         };
 
         const menu = document.getElementById('menu');
@@ -132,6 +112,7 @@ html_template = """
         function setTheme(theme) {
             document.body.style.backgroundColor = themes[theme]['--bg-color'];
             document.body.style.color = themes[theme]['--text-color'];
+            document.getElementById('chat-box').style.backgroundColor = themes[theme]['--chat-bg'];
         }
 
         document.getElementById('send-btn').addEventListener('click', () => {
