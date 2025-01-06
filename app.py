@@ -8,7 +8,7 @@ import random
 app = Flask(__name__)
 
 # English responses dictionary
-english_responses = {
+responses = {
     "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?"],
     "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
     "help": ["Sure! What do you need help with?", "I'm here to assist you."],
@@ -21,28 +21,32 @@ english_responses = {
 def get_chatbot_response(user_input):
     user_input = user_input.lower().strip()
 
-    if any(word in user_input for word in english_responses.keys()):
-        return random.choice(english_responses.get(user_input.lower(), ["Sorry, I didn't understand that."]))
+    if any(word in user_input for word in responses.keys()):
+        return random.choice(responses.get(user_input.lower(), ["Sorry, I didn't understand that."]))
 
     return "Sorry, I didn't understand that."
 
 # Function to make the chatbot speak using gTTS (Google Text-to-Speech)
 def speak(text, language="en"):
-    # Generate speech with Google TTS
-    tts = gTTS(text=text, lang=language)
-    tts.save("response.mp3")  # Save the speech as an MP3 file
+    try:
+        # Generate speech with Google TTS
+        tts = gTTS(text=text, lang=language)
+        tts.save("response.mp3")  # Save the speech as an MP3 file
 
-    # Platform-specific commands to play the MP3 file
-    current_platform = platform.system().lower()
+        # Platform-specific commands to play the MP3 file
+        current_platform = platform.system().lower()
 
-    if current_platform == "windows":
-        os.system("start response.mp3")  # Windows command
-    elif current_platform == "darwin":  # macOS
-        os.system("afplay response.mp3")  # macOS command
-    elif current_platform == "linux" or current_platform == "linux2":
-        os.system("mpg321 response.mp3")  # Linux command (ensure mpg321 is installed)
-    else:
-        print("Platform not supported for automatic audio playback.")
+        if current_platform == "windows":
+            os.system("start response.mp3")  # Windows command
+        elif current_platform == "darwin":  # macOS
+            os.system("afplay response.mp3")  # macOS command
+        elif current_platform == "linux" or current_platform == "linux2":
+            os.system("mpg321 response.mp3")  # Linux command (ensure mpg321 is installed)
+        else:
+            print("Platform not supported for automatic audio playback.")
+    except Exception as e:
+        print(f"Error in TTS: {e}")
+        return "Sorry, I couldn't speak the response at the moment."
 
 # Route for the chatbot response
 @app.route('/chat', methods=['POST'])
@@ -56,14 +60,18 @@ def chat():
 def speak_text():
     text = request.args.get('text', '')
     language = request.args.get('language', 'en')
-    tts = gTTS(text=text, lang=language)
     
-    # Save the MP3 in a temporary file
-    temp_mp3_path = "response.mp3"
-    tts.save(temp_mp3_path)
-    
-    # Serve the MP3 file as a response
-    return send_file(temp_mp3_path, mimetype='audio/mpeg', as_attachment=False)
+    try:
+        # Save the MP3 in a temporary file
+        tts = gTTS(text=text, lang=language)
+        temp_mp3_path = "response.mp3"
+        tts.save(temp_mp3_path)
+
+        # Serve the MP3 file as a response
+        return send_file(temp_mp3_path, mimetype='audio/mpeg', as_attachment=False)
+    except Exception as e:
+        print(f"Error in TTS: {e}")
+        return jsonify({"error": "Sorry, I couldn't generate the audio."})
 
 # HTML, CSS, and JavaScript embedded in the Python script
 html_template = """
@@ -74,6 +82,14 @@ html_template = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbot</title>
     <style>
+        /* Basic Styles */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Container for the chat */
         .chat-container {
             width: 100%;
             height: 100vh;
@@ -82,6 +98,7 @@ html_template = """
             justify-content: flex-end;
             background-color: #f0f0f0;
         }
+
         .chat-box {
             flex-grow: 1;
             padding: 10px;
@@ -89,16 +106,19 @@ html_template = """
             max-height: 80%;
             background-color: white;
         }
+
         .input-container {
             display: flex;
             padding: 10px;
             background-color: #fff;
         }
+
         #user-input {
             flex-grow: 1;
             padding: 10px;
             border-radius: 5px;
         }
+
         button {
             background-color: #007bff;
             color: white;
@@ -108,23 +128,102 @@ html_template = """
             cursor: pointer;
             border-radius: 5px;
         }
+
         .message {
             margin: 5px 0;
             padding: 5px 10px;
             border-radius: 10px;
             max-width: 70%;
         }
+
         .user {
             background-color: #cfe2f3;
             align-self: flex-end;
         }
+
         .bot {
             background-color: #e9ecef;
             align-self: flex-start;
         }
+
+        /* Hamburger menu styles */
+        .menu-container {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            background-color: #333;
+            padding: 10px;
+            color: white;
+        }
+
+        .hamburger {
+            font-size: 30px;
+            cursor: pointer;
+        }
+
+        .menu {
+            display: none;
+            position: absolute;
+            top: 50px;
+            left: 0;
+            width: 200px;
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .menu a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .menu a:hover {
+            background-color: #575757;
+        }
+
+        /* Theme Styles */
+        .dragon {
+            background-image: url('https://wallpapercave.com/w/wp6519549');
+            background-size: cover;
+        }
+
+        .black {
+            background-color: #000;
+            color: #fff;
+        }
+
+        .white {
+            background-color: #fff;
+            color: #000;
+        }
+
+        .flower {
+            background-image: url('https://wallpapercave.com/w/wp6850730');
+            background-size: cover;
+        }
+
+        .galaxy {
+            background-image: url('https://wallpapercave.com/w/wp8680890');
+            background-size: cover;
+        }
     </style>
 </head>
 <body>
+    <div class="menu-container">
+        <span class="hamburger" onclick="toggleMenu()">☰</span>
+        <div id="menu" class="menu">
+            <a href="#" onclick="changeTheme('dragon')">Dragon</a>
+            <a href="#" onclick="changeTheme('black')">Black</a>
+            <a href="#" onclick="changeTheme('white')">White</a>
+            <a href="#" onclick="changeTheme('flower')">Flower</a>
+            <a href="#" onclick="changeTheme('galaxy')">Galaxy</a>
+        </div>
+    </div>
+
     <div class="chat-container">
         <div id="chat-box" class="chat-box">
             <!-- Chat messages will appear here -->
@@ -135,11 +234,23 @@ html_template = """
             <button id="voice-btn">🎤 Speak</button>
         </div>
     </div>
+
     <script>
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         const voiceBtn = document.getElementById('voice-btn');
+        const menu = document.getElementById('menu');
+
+        function toggleMenu() {
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function changeTheme(theme) {
+            document.body.classList.remove('dragon', 'black', 'white', 'flower', 'galaxy');
+            document.body.classList.add(theme);
+            menu.style.display = 'none';  // Close the menu after selection
+        }
 
         sendBtn.addEventListener('click', () => {
             const userMessage = userInput.value;
@@ -171,8 +282,7 @@ html_template = """
                 chatBox.appendChild(botMessageDiv);
                 
                 // Trigger TTS to speak the response
-                let language = "en";  // Default to English
-                fetch(`/speak?text=${encodeURIComponent(data.response)}&language=${language}`)
+                fetch(`/speak?text=${encodeURIComponent(data.response)}&language=en`)
                 .then(response => response.blob())
                 .then(blob => {
                     const audio = new Audio(URL.createObjectURL(blob));
