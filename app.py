@@ -1,7 +1,5 @@
 from flask import Flask, render_template_string, request, jsonify, send_file
 from gtts import gTTS
-import os
-import platform
 import random
 
 # Initialize Flask app
@@ -49,7 +47,7 @@ html_template = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot</title>
+    <title>Sanji AI</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: #fff; }
         .chat-container { display: flex; flex-direction: column; height: 100vh; }
@@ -66,9 +64,34 @@ html_template = """
         #hamburger { position: fixed; left: 10px; top: 10px; cursor: pointer; color: #fff; font-size: 24px; }
         .theme-buttons { display: flex; flex-direction: column; margin: 10px; }
         .theme-buttons button { margin: 5px 0; }
+        
+        /* Scrolling Text */
+        .scrolling-text {
+            position: fixed;
+            top: 0;
+            left: 100%;
+            white-space: nowrap;
+            animation: scroll 10s linear infinite;
+            font-size: 24px;
+            color: #ff6347; /* Tomato color */
+            padding: 10px 0;
+            font-weight: bold;
+        }
+
+        @keyframes scroll {
+            0% {
+                left: 100%;
+            }
+            100% {
+                left: -100%;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Scrolling Text -->
+    <div class="scrolling-text">Welcome to Sanji AI</div>
+
     <div id="hamburger">☰</div>
     <div class="hamburger-menu" id="menu">
         <div class="menu-item">Home</div>
