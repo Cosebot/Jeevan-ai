@@ -2,11 +2,11 @@ from flask import Flask, render_template_string, request, jsonify, send_file
 from gtts import gTTS
 import random
 import os
-import requests
 
+# Initialize Flask app
 app = Flask(__name__)
 
-# Chatbot Responses
+# English responses dictionary
 english_responses = {
     "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?"],
     "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
@@ -16,10 +16,6 @@ english_responses = {
     "i am fine": ["Good to hear!", "Great to know!", "Stay blessed!"]
 }
 
-# Google Search API Key and Engine ID
-API_KEY = "AIzaSyDdwVlAq2eR5DSeGSOc7Xp2fsVEGsEcSM4"
-SEARCH_ENGINE_ID = "915e7f3b9d9d245ff"
-
 # Function to get a chatbot response
 def get_chatbot_response(user_input):
     user_input = user_input.lower().strip()
@@ -28,21 +24,7 @@ def get_chatbot_response(user_input):
             return random.choice(responses)
     return "Sorry, I didn't understand that."
 
-# Function to fetch search results using Google API
-def fetch_search_results(query):
-    url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={API_KEY}&cx={SEARCH_ENGINE_ID}"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        if "items" in data:
-            top_result = data["items"][0]
-            return f"Result: {top_result['title']}\nLink: {top_result['link']}"
-        else:
-            return "No results found."
-    else:
-        return "Error fetching search results. Please try again later."
-
-# Generate speech response
+# Function to generate speech using gTTS
 @app.route('/speak', methods=['GET'])
 def speak_text():
     text = request.args.get('text', '')
@@ -56,164 +38,189 @@ def speak_text():
 @app.route('/chat', methods=['POST'])
 def chat():
     user_input = request.json.get('message', '')
-    is_query_mode = request.json.get('query_mode', False)
+    response = get_chatbot_response(user_input)
     
-    if is_query_mode:
-        response = fetch_search_results(user_input)
-    else:
-        response = get_chatbot_response(user_input)
-    
-    # Generate speech for the response
+    # Generate speech for the bot's response
     tts = gTTS(text=response, lang='en')
     audio_path = "static/response.mp3"
     tts.save(audio_path)
 
     return jsonify({'response': response, 'audio_path': audio_path})
 
-# HTML Template with Themes
+# Home route
+@app.route('/')
+def home():
+    return render_template_string(html_template)
+
+# HTML Template
 html_template = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot with Themes</title>
+    <title>Sanji AI</title>
     <style>
         :root {
-            --background-color: #000;
-            --text-color: #fff;
-            --button-color: #007bff;
-            --user-message-color: #444;
-            --bot-message-color: #555;
+            --bg-color: #f0f0f0;
+            --chat-bg-color: #fff;
+            --user-msg-bg-color: #d1e7dd;
+            --bot-msg-bg-color: #f8d7da;
+            --btn-bg-color: #007bff;
+            --btn-text-color: #fff;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .chat-box {
+            flex-grow: 1;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        .input-container {
+            display: flex;
+            padding: 10px;
+            background-color: var(--chat-bg-color);
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ddd;
+            color: #333;
+        }
+        button {
+            padding: 10px;
+            background-color: var(--btn-bg-color);
+            border: none;
+            border-radius: 5px;
+            color: var(--btn-text-color);
+            cursor: pointer;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 70%;
+        }
+        .user {
+            align-self: flex-end;
+            background-color: var(--user-msg-bg-color);
+        }
+        .bot {
+            align-self: flex-start;
+            background-color: var(--bot-msg-bg-color);
         }
 
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: var(--background-color); color: var(--text-color); }
-        .chat-container { display: flex; flex-direction: column; height: 100vh; }
-        .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; }
-        .input-container { display: flex; padding: 10px; }
-        #user-input { flex-grow: 1; padding: 10px; border: none; border-radius: 5px; }
-        button { margin-left: 10px; padding: 10px; background-color: var(--button-color); border: none; border-radius: 5px; color: #fff; cursor: pointer; }
-        .message { margin: 5px 0; padding: 10px; border-radius: 5px; max-width: 70%; }
-        .user-message { align-self: flex-end; background-color: var(--user-message-color); }
-        .bot-message { align-self: flex-start; background-color: var(--bot-message-color); }
-        .theme-selector { padding: 10px; position: absolute; top: 10px; right: 10px; background-color: #222; color: #fff; border: none; border-radius: 5px; }
+        /* Theme styles */
+        .theme-buttons {
+            display: flex;
+            flex-direction: column;
+            margin-top: 10px;
+        }
+        .theme-buttons button {
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
-        <select id="theme-selector" class="theme-selector">
-            <option value="black">Black</option>
-            <option value="white">White</option>
-            <option value="pink">Pink</option>
-            <option value="gold">Gold</option>
-            <option value="diamond">Diamond</option>
-        </select>
-        <div id="chat-box" class="chat-box">
-            <!-- Chat messages will appear here -->
-        </div>
+        <div id="chat-box" class="chat-box"></div>
         <div class="input-container">
-            <input id="user-input" type="text" placeholder="Type a message or 'switch to query mode'..." />
+            <input id="user-input" type="text" placeholder="Type a message..." />
             <button id="send-btn">Send</button>
+            <button id="voice-btn">🎤 Speak</button>
+        </div>
+        <div class="theme-buttons">
+            <button onclick="setTheme('diamond')">Diamond</button>
+            <button onclick="setTheme('pink')">Pink</button>
+            <button onclick="setTheme('gold')">Gold</button>
+            <button onclick="setTheme('white')">White</button>
+            <button onclick="setTheme('black')">Black</button>
         </div>
     </div>
 
     <script>
-        const chatBox = document.getElementById('chat-box');
-        const userInput = document.getElementById('user-input');
-        const sendButton = document.getElementById('send-btn');
-        const themeSelector = document.getElementById('theme-selector');
+        const themes = {
+            diamond: { '--bg-color': '#D1F7FF', '--chat-bg-color': '#E5FFFF', '--user-msg-bg-color': '#B6E3F1', '--bot-msg-bg-color': '#A2E0FB' },
+            pink: { '--bg-color': '#F8E0E6', '--chat-bg-color': '#F8C6D7', '--user-msg-bg-color': '#F1A0B5', '--bot-msg-bg-color': '#F49EC2' },
+            gold: { '--bg-color': '#FFD700', '--chat-bg-color': '#FFEC99', '--user-msg-bg-color': '#FFB84D', '--bot-msg-bg-color': '#F5C24A' },
+            white: { '--bg-color': '#FFFFFF', '--chat-bg-color': '#F9F9F9', '--user-msg-bg-color': '#D3D3D3', '--bot-msg-bg-color': '#E0E0E0' },
+            black: { '--bg-color': '#2E2E2E', '--chat-bg-color': '#444444', '--user-msg-bg-color': '#555555', '--bot-msg-bg-color': '#666666' }
+        };
 
-        let queryMode = false; // Keeps track of the mode
-
-        // Function to append messages to the chatbox
-        function appendMessage(message, isUser = true) {
-            const messageDiv = document.createElement('div');
-            messageDiv.textContent = message;
-            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+        function setTheme(theme) {
+            const themeColors = themes[theme];
+            for (const key in themeColors) {
+                document.body.style.setProperty(key, themeColors[key]);
+            }
         }
 
-        // Handle send button click
-        sendButton.addEventListener('click', () => {
-            const userMessage = userInput.value.trim();
+        const chatBox = document.getElementById('chat-box');
+
+        document.getElementById('send-btn').addEventListener('click', () => {
+            const inputField = document.getElementById('user-input');
+            const userMessage = inputField.value.trim();
 
             if (!userMessage) return;
 
-            appendMessage(userMessage, true);
+            // Append user message to chat box
+            const userDiv = document.createElement('div');
+            userDiv.textContent = userMessage;
+            userDiv.className = 'message user';
+            chatBox.appendChild(userDiv);
 
-            if (userMessage.toLowerCase() === 'switch to query mode') {
-                queryMode = true;
-                appendMessage("Query mode activated! Type your question.", false);
-            } else {
-                // Fetch bot/chat or query response
-                fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: userMessage, query_mode: queryMode })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    appendMessage(data.response, false);
+            inputField.value = '';
 
-                    // Play the bot's voice response
-                    const audio = new Audio(data.audio_path);
-                    audio.play();
-                });
-            }
+            // Fetch bot response
+            fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userMessage })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const botDiv = document.createElement('div');
+                botDiv.textContent = data.response;
+                botDiv.className = 'message bot';
+                chatBox.appendChild(botDiv);
 
-            userInput.value = ''; // Clear input field
+                // Play the bot's voice response
+                const audio = new Audio(data.audio_path);
+                audio.play();
+
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
         });
 
-        // Theme selector event listener
-        themeSelector.addEventListener('change', () => {
-            const theme = themeSelector.value;
-            switch (theme) {
-                case 'black':
-                    document.documentElement.style.setProperty('--background-color', '#000');
-                    document.documentElement.style.setProperty('--text-color', '#fff');
-                    document.documentElement.style.setProperty('--button-color', '#007bff');
-                    document.documentElement.style.setProperty('--user-message-color', '#444');
-                    document.documentElement.style.setProperty('--bot-message-color', '#555');
-                    break;
-                case 'white':
-                    document.documentElement.style.setProperty('--background-color', '#fff');
-                    document.documentElement.style.setProperty('--text-color', '#000');
-                    document.documentElement.style.setProperty('--button-color', '#007bff');
-                    document.documentElement.style.setProperty('--user-message-color', '#ccc');
-                    document.documentElement.style.setProperty('--bot-message-color', '#ddd');
-                    break;
-                case 'pink':
-                    document.documentElement.style.setProperty('--background-color', '#ffe4e1');
-                    document.documentElement.style.setProperty('--text-color', '#000');
-                    document.documentElement.style.setProperty('--button-color', '#ff69b4');
-                    document.documentElement.style.setProperty('--user-message-color', '#ffc0cb');
-                    document.documentElement.style.setProperty('--bot-message-color', '#ffb6c1');
-                    break;
-                case 'gold':
-                    document.documentElement.style.setProperty('--background-color', '#ffd700');
-                    document.documentElement.style.setProperty('--text-color', '#000');
-                    document.documentElement.style.setProperty('--button-color', '#ffa500');
-                    document.documentElement.style.setProperty('--user-message-color', '#ffe4b5');
-                    document.documentElement.style.setProperty('--bot-message-color', '#ffdab9');
-                    break;
-                case 'diamond':
-                    document.documentElement.style.setProperty('--background-color', '#e0ffff');
-                    document.documentElement.style.setProperty('--text-color', '#000');
-                    document.documentElement.style.setProperty('--button-color', '#00ced1');
-                    document.documentElement.style.setProperty('--user-message-color', '#b0e0e6');
-                    document.documentElement.style.setProperty('--bot-message-color', '#afeeee');
-                    break;
-            }
+        // Voice input using Speech Recognition API
+        const voiceBtn = document.getElementById('voice-btn');
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        
+        recognition.onresult = function(event) {
+            const userMessage = event.results[0][0].transcript;
+            document.getElementById('user-input').value = userMessage;
+
+            // Automatically send the message after voice input
+            document.getElementById('send-btn').click();
+        }
+
+        voiceBtn.addEventListener('click', () => {
+            recognition.start();
         });
     </script>
 </body>
 </html>
 """
-
-@app.route('/')
-def home():
-    return render_template_string(html_template)
 
 if __name__ == '__main__':
     app.run(debug=True)
