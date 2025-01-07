@@ -54,10 +54,10 @@ html_template = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sanji AI</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #000; color: #fff; transition: all 0.3s ease; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color, #000); color: var(--text-color, #fff); transition: all 0.3s ease; }
         .chat-container { display: flex; flex-direction: column; height: 100vh; }
-        .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; background-color: #111; display: flex; flex-direction: column-reverse; }
-        .input-container { display: flex; padding: 10px; background-color: #111; }
+        .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; background-color: var(--chat-bg, #111); display: flex; flex-direction: column-reverse; }
+        .input-container { display: flex; padding: 10px; background-color: var(--chat-bg, #111); }
         #user-input { flex-grow: 1; padding: 10px; border: none; border-radius: 5px; background-color: #333; color: #fff; }
         button { margin-left: 10px; padding: 10px; background-color: #007bff; border: none; border-radius: 5px; color: #fff; cursor: pointer; }
         .message { margin: 5px 0; padding: 10px; border-radius: 10px; max-width: 70%; }
@@ -104,31 +104,53 @@ html_template = """
             ant: { '--bg-color': '#000', '--text-color': '#fff', '--chat-bg': '#333' }
         };
 
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'ant';
+            setTheme(savedTheme);
+        });
+
         const menu = document.getElementById('menu');
         document.getElementById('hamburger').addEventListener('click', () => {
             menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
         });
 
         function setTheme(theme) {
-            document.body.style.backgroundColor = themes[theme]['--bg-color'];
-            document.body.style.color = themes[theme]['--text-color'];
-            document.getElementById('chat-box').style.backgroundColor = themes[theme]['--chat-bg'];
+            const themeColors = themes[theme];
+            for (const key in themeColors) {
+                document.body.style.setProperty(key, themeColors[key]);
+            }
+            localStorage.setItem('theme', theme);
         }
 
+        const chatBox = document.getElementById('chat-box');
+
         document.getElementById('send-btn').addEventListener('click', () => {
-            const input = document.getElementById('user-input').value;
-            if (!input) return;
+            const inputField = document.getElementById('user-input');
+            const userMessage = inputField.value.trim();
+
+            if (!userMessage) return;
+
+            // Append user message to chat box
+            const userDiv = document.createElement('div');
+            userDiv.textContent = userMessage;
+            userDiv.className = 'message user';
+            chatBox.appendChild(userDiv);
+
+            inputField.value = '';
+
+            // Fetch bot response
             fetch('/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: input })
+                body: JSON.stringify({ message: userMessage })
             })
             .then(res => res.json())
             .then(data => {
                 const botDiv = document.createElement('div');
                 botDiv.textContent = data.response;
                 botDiv.className = 'message bot';
-                document.getElementById('chat-box').appendChild(botDiv);
+                chatBox.appendChild(botDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
             });
         });
     </script>
