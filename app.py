@@ -1,13 +1,11 @@
-from flask import Flask, render_template_string, request, jsonify, send_file
+from flask import Flask, render_template_string, request, jsonify
 from gtts import gTTS
 import random
 import os
-import io
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# English responses dictionary
+# Sample chatbot responses
 english_responses = {
     "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?"],
     "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
@@ -17,48 +15,15 @@ english_responses = {
     "i am fine": ["Good to hear!", "Great to know!", "Stay blessed!"]
 }
 
-# Function to get a chatbot response
+# Function to get chatbot response
 def get_chatbot_response(user_input):
     user_input = user_input.lower().strip()
-    print(f"User Input: {user_input}")  # Debug log
     for key, responses in english_responses.items():
         if key in user_input:
-            response = random.choice(responses)
-            print(f"Bot Response: {response}")  # Debug log
-            return response
+            return random.choice(responses)
     return "Sorry, I didn't understand that."
 
-# Function to generate speech using gTTS and store it in memory
-@app.route('/speak', methods=['GET'])
-def speak_text():
-    text = request.args.get('text', '')
-    language = request.args.get('language', 'en')
-    tts = gTTS(text=text, lang=language)
-    mp3_data = io.BytesIO()
-    tts.save(mp3_data)
-    mp3_data.seek(0)  # Reset pointer to the start of the file
-    return send_file(mp3_data, mimetype='audio/mpeg', as_attachment=False)
-
-# Chat route
-@app.route('/chat', methods=['POST'])
-def chat():
-    user_input = request.json.get('message', '')
-    response = get_chatbot_response(user_input)
-    
-    # Generate speech for the bot's response and store it in memory
-    tts = gTTS(text=response, lang='en')
-    audio_data = io.BytesIO()
-    tts.save(audio_data)
-    audio_data.seek(0)  # Reset pointer to the start of the file
-    
-    return jsonify({'response': response, 'audio': audio_data.getvalue().decode('latin1')})
-
-# Home route
-@app.route('/')
-def home():
-    return render_template_string(html_template)
-
-# HTML Template with themes and query mode toggle
+# HTML Template with themes
 html_template = """
 <!DOCTYPE html>
 <html lang="en">
@@ -67,110 +32,104 @@ html_template = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sanji AI</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color, #000); color: var(--text-color, #fff); transition: all 0.3s ease; }
-        .chat-container { display: flex; flex-direction: column; height: 100vh; }
-        .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; background-color: var(--chat-bg, #111); display: flex; flex-direction: column; }
-        .input-container { display: flex; padding: 10px; background-color: var(--chat-bg, #111); }
-        #user-input { flex-grow: 1; padding: 10px; border: none; border-radius: 5px; background-color: #333; color: #fff; }
-        button { margin-left: 10px; padding: 10px; background-color: #007bff; border: none; border-radius: 5px; color: #fff; cursor: pointer; }
-        .message { margin: 5px 0; padding: 10px; border-radius: 10px; max-width: 70%; }
-        .user { align-self: flex-end; background-color: #444; }
-        .bot { align-self: flex-start; background-color: #555; }
-        #query-mode { display: none; margin-top: 20px; }
-        .hamburger-menu { position: fixed; left: 0; top: 0; width: 200px; height: 100vh; background-color: #222; display: none; flex-direction: column; }
-        .menu-item { color: #fff; padding: 10px; border-bottom: 1px solid #444; cursor: pointer; }
-        .menu-item:hover { background-color: #333; }
-        #hamburger { position: fixed; left: 10px; top: 10px; cursor: pointer; color: #fff; font-size: 24px; }
-        .theme-buttons { display: flex; flex-direction: column; margin: 10px; }
-        .theme-buttons button { margin: 5px 0; }
-
-        /* Banner Styles */
-        .banner {
-            position: fixed;
-            top: 0;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f1f1f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #chat-box {
             width: 100%;
-            background-color: #333;
+            max-width: 500px;
+            height: 400px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            overflow-y: auto;
+            border-radius: 10px;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            max-width: 80%;
+        }
+        .user {
+            background-color: #e1f7d5;
+            align-self: flex-end;
+        }
+        .bot {
+            background-color: #d8e3fc;
+            align-self: flex-start;
+        }
+        .input-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        #user-input {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 70%;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            background-color: #4CAF50;
             color: white;
-            text-align: center;
-            padding: 10px 0;
-            font-size: 20px;
-            white-space: nowrap;
-            overflow: hidden;
-            z-index: 1000;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
         }
 
-        .banner-text {
-            display: inline-block;
-            animation: moveBanner 10s linear infinite;
+        /* Theme styles */
+        body.diamond {
+            background-color: #b9e0e6;
         }
-
-        @keyframes moveBanner {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
+        body.pink {
+            background-color: #ffc0cb;
         }
-
+        body.gold {
+            background-color: #ffd700;
+        }
+        body.white {
+            background-color: #ffffff;
+        }
+        body.black {
+            background-color: #1a1a1a;
+            color: white;
+        }
     </style>
 </head>
 <body>
-    <!-- Moving Banner -->
-    <div class="banner">
-        <div class="banner-text">Welcome to Sanji AI. Type 'Switch to query mode' for question answers.</div>
+    <div id="chat-box"></div>
+    <div class="input-container">
+        <input id="user-input" type="text" placeholder="Type a message..." />
+        <button id="send-btn">Send</button>
+        <button id="voice-btn">🎤 Speak</button>
     </div>
 
-    <div id="hamburger">☰</div>
-    <div class="hamburger-menu" id="menu">
-        <div class="menu-item" onclick="window.location.reload()">Home</div>
-        <div class="menu-item">Settings
-            <div class="theme-buttons">
-                <button onclick="setTheme('diamond')">Diamond</button>
-                <button onclick="setTheme('pink')">Pink</button>
-                <button onclick="setTheme('gold')">Gold</button>
-                <button onclick="setTheme('white')">White</button>
-                <button onclick="setTheme('black')">Black</button>
-            </div>
-        </div>
-        <div class="menu-item"><a href="mailto:hazanulashkar@gmail.com" style="color: inherit;">Contact Us</a></div>
-    </div>
-
-    <div class="chat-container">
-        <div id="chat-box" class="chat-box"></div>
-        <div class="input-container">
-            <input id="user-input" type="text" placeholder="Type a message..." />
-            <button id="send-btn">Send</button>
-            <button id="voice-btn">🎤 Speak</button>
-        </div>
-    </div>
-
-    <!-- Google Custom Search -->
-    <div id="query-mode">
-        <script async src="https://cse.google.com/cse.js?cx=915e7f3b9d9d245ff"></script>
-        <div class="gcse-search"></div>
+    <!-- Theme Selector -->
+    <div style="text-align: center; margin-top: 20px;">
+        <button onclick="changeTheme('diamond')">Diamond Theme</button>
+        <button onclick="changeTheme('pink')">Pink Theme</button>
+        <button onclick="changeTheme('gold')">Gold Theme</button>
+        <button onclick="changeTheme('white')">White Theme</button>
+        <button onclick="changeTheme('black')">Black Theme</button>
     </div>
 
     <script>
-        const themes = {
-            diamond: { '--bg-color': 'lightblue', '--text-color': '#000', '--chat-bg': '#e0f7fa' },
-            pink: { '--bg-color': 'pink', '--text-color': '#000', '--chat-bg': '#ffebee' },
-            gold: { '--bg-color': 'yellow', '--text-color': '#000', '--chat-bg': '#fff9c4' },
-            white: { '--bg-color': '#fff', '--text-color': '#000', '--chat-bg': '#f1f1f1' },
-            black: { '--bg-color': '#000', '--text-color': '#fff', '--chat-bg': '#333' }
-        };
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('theme') || 'black';
-            setTheme(savedTheme);
-        });
-
-        function setTheme(theme) {
-            const themeColors = themes[theme];
-            for (const key in themeColors) {
-                document.body.style.setProperty(key, themeColors[key]);
-            }
-            localStorage.setItem('theme', theme);
-        }
-
         const chatBox = document.getElementById('chat-box');
-        const queryMode = document.getElementById('query-mode');
 
         document.getElementById('send-btn').addEventListener('click', () => {
             const inputField = document.getElementById('user-input');
@@ -185,30 +144,23 @@ html_template = """
 
             inputField.value = '';
 
-            // If the user types 'Switch to query mode', activate search mode
-            if (userMessage.toLowerCase() === 'switch to query mode') {
-                queryMode.style.display = 'block';
-                chatBox.style.display = 'none';
-                return;
-            }
-
             // Fetch bot response
             fetch('/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: userMessage })
             })
-          .then(res => res.json())
+            .then(res => res.json())
             .then(data => {
-                const botMessage = data.response;
                 const botDiv = document.createElement('div');
-                botDiv.textContent = botMessage;
+                botDiv.textContent = data.response;
                 botDiv.className = 'message bot';
                 chatBox.appendChild(botDiv);
 
-                // Generate audio for bot response
-                const audioData = new Audio('data:audio/mpeg;base64,' + data.audio);
-                audioData.play();
+                // Play the bot's voice response
+                const audio = new Audio('data:audio/mpeg;base64,' + data.audio);
+                audio.play();
+
                 chatBox.scrollTop = chatBox.scrollHeight;
             });
         });
@@ -235,13 +187,38 @@ html_template = """
             }
         });
 
-        // Hamburger menu toggle
-        document.getElementById('hamburger').addEventListener('click', () => {
-            const menu = document.getElementById('menu');
-            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
-        });
+        function changeTheme(theme) {
+            document.body.className = theme;
+        }
     </script>
 </body>
 </html>
+"""
+
+# Home route
+@app.route('/')
+def home():
+    return render_template_string(html_template)
+
+# Chat route
+@app.route('/chat', methods=['POST'])
+def chat():
+    user_input = request.json.get('message', '')
+    response = get_chatbot_response(user_input)
+    
+    # Generate speech for bot response
+    tts = gTTS(text=response, lang='en')
+    audio_path = "response.mp3"
+    tts.save(audio_path)
+    
+    with open(audio_path, "rb") as f:
+        audio_data = f.read()
+    
+    # Clean up
+    os.remove(audio_path)
+    
+    return jsonify({'response': response, 'audio': audio_data.decode('base64')})
+
+# Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True)
