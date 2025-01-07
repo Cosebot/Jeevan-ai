@@ -11,8 +11,8 @@ english_responses = {
     "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
     "help": ["Sure! What do you need help with?", "I'm here to assist you."],
     "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!"],
-    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"], 
-    "i am fine": ["Good to hear!", "Great man! ", " May god bless you!"]
+    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"],
+    "i am fine": ["Good to hear!", "Great to know!", "Stay blessed!"]
 }
 
 # Function to get a chatbot response
@@ -40,7 +40,7 @@ def chat():
     response = get_chatbot_response(user_input)
     return jsonify({'response': response})
 
-# Home route (for the Home button)
+# Home route
 @app.route('/')
 def home():
     return render_template_string(html_template)
@@ -54,7 +54,7 @@ html_template = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sanji AI</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; overflow: hidden; background-color: #000; color: #fff; transition: all 0.3s ease; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #000; color: #fff; transition: all 0.3s ease; }
         .chat-container { display: flex; flex-direction: column; height: 100vh; }
         .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; background-color: #111; display: flex; flex-direction: column-reverse; }
         .input-container { display: flex; padding: 10px; background-color: #111; }
@@ -74,7 +74,7 @@ html_template = """
 <body>
     <div id="hamburger">☰</div>
     <div class="hamburger-menu" id="menu">
-        <div class="menu-item">Home</div>
+        <div class="menu-item" onclick="window.location.reload()">Home</div>
         <div class="menu-item">Settings
             <div class="theme-buttons">
                 <button onclick="setTheme('diamond')">Diamond</button>
@@ -135,10 +135,6 @@ html_template = """
 </body>
 </html>
 """
-
-@app.route('/')
-def home():
-    return render_template_string(html_template)
 
 if __name__ == '__main__':
     app.run(debug=True)
