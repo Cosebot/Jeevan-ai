@@ -1,10 +1,12 @@
 from flask import Flask, render_template_string, request, jsonify, send_file
 from gtts import gTTS
 import random
+import os
 
 # Initialize Flask app
 app = Flask(__name__)
 
+# English responses dictionary
 english_responses = {
     "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?", "Greetings!", "Howdy!", "Hi, what’s up?"],
     "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!", "Doing well! How can I assist you?", "All systems are functional, thank you!"],
@@ -85,7 +87,13 @@ def speak_text():
 def chat():
     user_input = request.json.get('message', '')
     response = get_chatbot_response(user_input)
-    return jsonify({'response': response})
+    
+    # Generate speech for the bot's response
+    tts = gTTS(text=response, lang='en')
+    audio_path = "static/response.mp3"
+    tts.save(audio_path)
+
+    return jsonify({'response': response, 'audio_path': audio_path})
 
 # Home route
 @app.route('/')
@@ -103,7 +111,7 @@ html_template = """
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color, #000); color: var(--text-color, #fff); transition: all 0.3s ease; }
         .chat-container { display: flex; flex-direction: column; height: 100vh; }
-        .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; background-color: var(--chat-bg, #111); display: flex; flex-direction: column-reverse; }
+        .chat-box { flex-grow: 1; padding: 10px; overflow-y: auto; background-color: var(--chat-bg, #111); display: flex; flex-direction: column; }
         .input-container { display: flex; padding: 10px; background-color: var(--chat-bg, #111); }
         #user-input { flex-grow: 1; padding: 10px; border: none; border-radius: 5px; background-color: #333; color: #fff; }
         button { margin-left: 10px; padding: 10px; background-color: #007bff; border: none; border-radius: 5px; color: #fff; cursor: pointer; }
@@ -116,9 +124,88 @@ html_template = """
         #hamburger { position: fixed; left: 10px; top: 10px; cursor: pointer; color: #fff; font-size: 24px; }
         .theme-buttons { display: flex; flex-direction: column; margin: 10px; }
         .theme-buttons button { margin: 5px 0; }
+
+        /* Banner Styles */
+        .banner {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 20px;
+            white-space: nowrap;
+            overflow: hidden;
+            z-index: 1000;
+        }
+
+        .banner-text {
+            display: inline-block;
+            animation: moveBanner 10s linear infinite;
+        }
+
+        @keyframes moveBanner {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* Query Mode Message */
+        .query-banner {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #222;
+            color: #fff;
+            text-align: center;
+            padding: 8px;
+            font-size: 18px;
+            white-space: nowrap;
+            overflow: hidden;
+            animation: moveQueryMessage 15s linear infinite;
+        }
+
+        @keyframes moveQueryMessage {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* Google Search Styling */
+        .gcse-search {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Hide Google Search by default */
+        .gcse-search-container {
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <!-- Moving Banner -->
+    <div class="banner">
+        <div class="banner-text">Welcome to Sanji AI</div>
+    </div>
+
+    <!-- Query Mode Message at the bottom -->
+    <div class="query-banner">
+        Type <strong>Switch</strong> to query mode for question answers.
+    </div>
+
     <div id="hamburger">☰</div>
     <div class="hamburger-menu" id="menu">
         <div class="menu-item" onclick="window.location.reload()">Home</div>
@@ -129,6 +216,11 @@ html_template = """
                 <button onclick="setTheme('gold')">Gold</button>
                 <button onclick="setTheme('cloud')">Cloud</button>
                 <button onclick="setTheme('ant')">Ant</button>
+            </div>
+        </div>
+        <div class="menu-item">
+            <div class="gcse-search-container" id="search-bar">
+                <div class="gcse-search"></div>
             </div>
         </div>
         <div class="menu-item"><a href="mailto:hazanulashkar@gmail.com" style="color: inherit;">Contact Us</a></div>
@@ -142,6 +234,9 @@ html_template = """
         </div>
     </div>
 
+    <!-- Google Custom Search Script -->
+    <script async src="https://cse.google.com/cse.js?cx=915e7f3b9d9d245ff"></script>
+    
     <script>
         const themes = {
             diamond: { '--bg-color': 'lightblue', '--text-color': '#000', '--chat-bg': '#e0f7fa' },
@@ -170,12 +265,23 @@ html_template = """
         }
 
         const chatBox = document.getElementById('chat-box');
+        const searchBarContainer = document.getElementById('search-bar');
+        const chatBoxContainer = document.querySelector('.chat-container');
 
         document.getElementById('send-btn').addEventListener('click', () => {
             const inputField = document.getElementById('user-input');
             const userMessage = inputField.value.trim();
 
             if (!userMessage) return;
+
+            // Check if user typed "switch"
+            if (userMessage.toLowerCase() === 'switch') {
+                // Switch to search mode
+                chatBoxContainer.style.display = 'none'; // Hide chat box
+                searchBarContainer.style.display = 'block'; // Show search bar
+                inputField.value = ''; // Clear the input field
+                return;
+            }
 
             // Append user message to chat box
             const userDiv = document.createElement('div');
@@ -197,13 +303,33 @@ html_template = """
                 botDiv.textContent = data.response;
                 botDiv.className = 'message bot';
                 chatBox.appendChild(botDiv);
+
+                // Play the bot's voice response
+                const audio = new Audio(data.audio_path);
+                audio.play();
+
                 chatBox.scrollTop = chatBox.scrollHeight;
             });
+        });
+
+        // Voice input using Speech Recognition API
+        const voiceBtn = document.getElementById('voice-btn');
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        
+        recognition.onresult = function(event) {
+            const userMessage = event.results[0][0].transcript;
+            document.getElementById('user-input').value = userMessage;
+
+            // Automatically send the message after voice input
+            document.getElementById('send-btn').click();
+        }
+
+        voiceBtn.addEventListener('click', () => {
+            recognition.start();
         });
     </script>
 </body>
 </html>
 """
-
 if __name__ == '__main__':
     app.run(debug=True)
