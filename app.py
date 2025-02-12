@@ -6,7 +6,7 @@ import os
 import base64
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests (if needed)
+CORS(app)
 
 # Chatbot Responses
 english_responses = {
@@ -38,31 +38,12 @@ def generate_tts(text: str) -> str:
     os.remove(audio_path)
     return audio_data
 
-def fetch_search_results(query: str) -> str:
-    """Fetches search results based on query"""
-    if "news" in query:
-        return "Fetching latest news..."
-    elif "music" in query:
-        return "Searching for music..."
-    elif "video" in query:
-        return "Finding videos for you..."
-    elif "website" in query:
-        return f"Searching for {query}..."
-    else:
-        return f"Searching Google for {query}..."
-
 @app.route("/chat", methods=["POST"])
 def chat():
-    """Handles chatbot and search mode"""
+    """Handles chatbot messages"""
     data = request.get_json()
     message = data.get("message", "")
-    search_mode = data.get("search_mode", False)
-
-    if search_mode:
-        response_text = fetch_search_results(message)
-    else:
-        response_text = get_chatbot_response(message)
-
+    response_text = get_chatbot_response(message)
     audio_base64 = generate_tts(response_text)
     return jsonify({"response": response_text, "audio": audio_base64})
 
@@ -84,7 +65,7 @@ def serve_frontend():
                 flex-direction: column;
                 align-items: center;
                 height: 100vh;
-                background-color: #f1f1f1;
+                background-color: #f9f9f9;
                 justify-content: center;
                 margin: 0;
             }
@@ -118,19 +99,21 @@ def serve_frontend():
                 display: flex;
                 align-items: center;
                 background-color: white;
-                border-radius: 20px;
+                border-radius: 30px;
                 padding: 10px;
                 box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
                 width: 90%;
                 max-width: 500px;
                 margin-top: 10px;
+                position: relative;
             }
             .chat-icon {
                 background: none;
                 border: none;
                 cursor: pointer;
                 font-size: 20px;
-                margin: 0 5px;
+                margin: 0 10px;
+                color: #333;
             }
             #user-input {
                 flex: 1;
@@ -138,9 +121,20 @@ def serve_frontend():
                 padding: 10px;
                 font-size: 16px;
                 outline: none;
+                border-radius: 30px;
+                background: none;
             }
-            .search-mode {
-                background-color: #ffcccb;
+            .icon-container {
+                display: flex;
+                justify-content: space-around;
+                width: 100%;
+            }
+            .icon-group {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                font-size: 14px;
+                cursor: pointer;
             }
         </style>
     </head>
@@ -149,24 +143,33 @@ def serve_frontend():
         <div id="chat-box"></div>
         
         <div class="chat-input">
-            <button class="chat-icon" id="toggle-search"><i class="fas fa-search"></i></button>
             <input type="text" id="user-input" placeholder="Message">
-            <button class="chat-icon" id="voice-btn"><i class="fas fa-microphone"></i></button>
-            <button class="chat-icon" id="send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+
+        <div class="icon-container">
+            <div class="icon-group" id="add-btn">
+                <i class="fas fa-plus chat-icon"></i>
+                <span>Add</span>
+            </div>
+            <div class="icon-group" id="search-btn">
+                <i class="fas fa-globe chat-icon"></i>
+                <span>Search</span>
+            </div>
+            <div class="icon-group" id="reason-btn">
+                <i class="fas fa-lightbulb chat-icon"></i>
+                <span>Reason</span>
+            </div>
+            <div class="icon-group" id="voice-btn">
+                <i class="fas fa-microphone chat-icon"></i>
+                <span>Mic</span>
+            </div>
+            <div class="icon-group" id="send-btn">
+                <i class="fas fa-paper-plane chat-icon"></i>
+                <span>Send</span>
+            </div>
         </div>
 
         <script>
-            let searchMode = false;
-            const chatBox = document.getElementById('chat-box');
-            const userInput = document.getElementById('user-input');
-            const toggleSearchBtn = document.getElementById('toggle-search');
-
-            toggleSearchBtn.addEventListener('click', () => {
-                searchMode = !searchMode;
-                userInput.placeholder = searchMode ? "Search something..." : "Message";
-                userInput.classList.toggle("search-mode");
-            });
-
             document.getElementById('send-btn').addEventListener('click', () => {
                 sendMessage();
             });
@@ -188,16 +191,16 @@ def serve_frontend():
             });
 
             function sendMessage() {
-                const message = userInput.value.trim();
+                const message = document.getElementById('user-input').value.trim();
                 if (!message) return;
 
                 appendMessage(message, "user");
-                userInput.value = '';
+                document.getElementById('user-input').value = '';
 
                 fetch('/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message, search_mode: searchMode })
+                    body: JSON.stringify({ message: message })
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -209,6 +212,7 @@ def serve_frontend():
             }
 
             function appendMessage(text, sender) {
+                const chatBox = document.getElementById('chat-box');
                 const messageDiv = document.createElement('div');
                 messageDiv.textContent = text;
                 messageDiv.className = `message ${sender}`;
@@ -223,4 +227,4 @@ def serve_frontend():
     return render_template_string(html_content)
 
 if __name__ == "__main__":
-    app.run() 
+    app.run(debug=True)
