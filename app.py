@@ -96,45 +96,45 @@ def serve_frontend():
                 text-align: left;
             }
             .chat-input {
-                display: flex;
-                align-items: center;
-                background-color: white;
-                border-radius: 30px;
-                padding: 10px;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-                width: 90%;
-                max-width: 500px;
-                margin-top: 10px;
-                position: relative;
-            }
-            .chat-icon {
-                background: none;
-                border: none;
-                cursor: pointer;
-                font-size: 20px;
-                margin: 0 10px;
-                color: #333;
-            }
-            #user-input {
-                flex: 1;
-                border: none;
-                padding: 10px;
-                font-size: 16px;
-                outline: none;
-                border-radius: 30px;
-                background: none;
-            }
-            .icon-container {
-                display: flex;
-                justify-content: space-around;
-                width: 100%;
-            }
-            .icon-group {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                font-size: 14px;
-                cursor: pointer;
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border-radius: 30px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px;
+    margin-top: 10px;
+    position: relative;
+}
+
+.icon-container {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.icon-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 14px;
+    cursor: pointer;
+    background: #001F3F;  /* Deep Navy Blue */
+    color: white;  /* White text */
+    padding: 12px;
+    border-radius: 50px;
+    width: 55px;
+    height: 55px;
+    display: flex;
+    justify-content: center;
+}
+
+.icon-group i {
+    color: white;  /* White icons */
+    font-size: 20px;
+}
             }
         </style>
     </head>
