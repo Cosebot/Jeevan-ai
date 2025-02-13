@@ -65,29 +65,31 @@ def serve_frontend():
             --secondary-color: #ffffff;
         }
 
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            background-color: var(--primary-color);
-            color: var(--secondary-color);
-            justify-content: center;
-            margin: 0;
-        }
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    background-color: var(--primary-color);
+    color: var(--secondary-color);
+    justify-content: center;
+    margin: 0;
+    width: 100vw;
+    max-width: 430px; /* Typical phone width */
+}
 
-        #chat-box {
-            width: 90%;
-            max-width: 500px;
-            height: 400px;
-            background-color: white;
-            border-radius: 10px;
-            padding: 10px;
-            overflow-y: auto;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            color: black;
-        }
+#chat-box {
+    width: 95%;
+    max-width: 400px; /* Adjusted for typical phone screens */
+    height: 70vh; /* Makes it flexible for different screen sizes */
+    background-color: white;
+    border-radius: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    color: black;
+}
 
         .message {
             padding: 10px;
