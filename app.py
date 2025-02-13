@@ -1,11 +1,15 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify, send_file, render_template_string
 import os
 from gtts import gTTS
-import speech_recognition as sr
 
 app = Flask(__name__)
 
-# Simple AI response logic
+# Ensure a temp directory exists for saving audio
+TEMP_DIR = "static"
+if not os.path.exists(TEMP_DIR):
+    os.makedirs(TEMP_DIR)
+
+# Chatbot logic
 def chatbot_response(user_input):
     responses = {
         "hello": "Hi there!",
@@ -16,10 +20,10 @@ def chatbot_response(user_input):
     }
     return responses.get(user_input.lower(), responses["default"])
 
-# Home route serving the chatbot UI
+# Serve frontend (HTML)
 @app.route('/')
 def home():
-    return '''
+    html_content = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -137,45 +141,30 @@ def home():
 
                 $("#user-input").val(""); // Clear input field
             });
-
-            // Speech recognition (Voice Input)
-            $("#voice-btn").click(() => {
-                $.post("/speech", {}, (data) => {
-                    $("#user-input").val(data.text);
-                });
-            });
         </script>
 
     </body>
     </html>
-    '''
+    """
+    return render_template_string(html_content)
 
-# Handle chat input & AI response
+# Handle chat requests and generate TTS response
 @app.route('/chat', methods=['POST'])
 def chat():
     user_message = request.json.get("message", "")
     bot_reply = chatbot_response(user_message)
 
-    # Convert text-to-speech (TTS)
+    # Generate and save TTS audio
+    tts_file = os.path.join(TEMP_DIR, "response.mp3")
     tts = gTTS(bot_reply, lang='en')
-    tts.save("static/response.mp3")
+    tts.save(tts_file)
 
-    return jsonify({"reply": bot_reply, "audio": "/static/response.mp3"})
+    return jsonify({"reply": bot_reply, "audio": "/" + tts_file})
 
-# Handle voice input (Speech Recognition)
-@app.route('/speech', methods=['POST'])
-def speech():
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        try:
-            recognizer.adjust_for_ambient_noise(source)
-            audio = recognizer.listen(source)
-            text = recognizer.recognize_google(audio)
-            return jsonify({"text": text})
-        except sr.UnknownValueError:
-            return jsonify({"text": "Sorry, I didn't catch that."})
-        except sr.RequestError:
-            return jsonify({"text": "Speech recognition service unavailable."})
+# Serve the generated TTS file
+@app.route('/static/response.mp3')
+def get_audio():
+    return send_file("static/response.mp3", mimetype="audio/mp3")
 
 if __name__ == '__main__':
     app.run(debug=True)
