@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 # Chatbot Responses
 english_responses = {
-    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?"],
+    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?", "Sup dude?", "Hey my Homie. Howcha doing?"],
     "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
     "help": ["Sure! What do you need help with?", "I'm here to assist you."],
     "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!"],
