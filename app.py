@@ -5,8 +5,6 @@ import random
 import threading
 import time
 import speech_recognition as sr
-from pydub import AudioSegment
-from pydub.effects import speedup
 
 app = Flask(__name__)
 
@@ -38,7 +36,7 @@ def chat():
 
 @app.route("/speak", methods=["POST"])
 def speak():
-    """Converts chatbot response to speech and modulates the voice"""
+    """Converts chatbot response to speech"""
     data = request.get_json()
     text = data.get("text", "")
 
@@ -49,17 +47,10 @@ def speak():
     filename = "temp.mp3"
     tts.save(filename)
 
-    # Modulate Voice (Change Pitch & Speed)
-    audio = AudioSegment.from_file(filename)
-    audio = speedup(audio, playback_speed=1.2)  # Increase speed
-    audio = audio + 6  # Increase pitch
-    modulated_filename = "modulated_temp.mp3"
-    audio.export(modulated_filename, format="mp3")
+    # Cleanup after 10 seconds
+    threading.Thread(target=cleanup_audio, args=(filename,)).start()
 
-    # Cleanup after some time
-    threading.Thread(target=cleanup_audio, args=(filename, modulated_filename)).start()
-
-    return send_file(modulated_filename, mimetype="audio/mpeg")
+    return send_file(filename, mimetype="audio/mpeg")
 
 def cleanup_audio(*files):
     """Deletes temp audio files after 10 seconds"""
@@ -68,31 +59,11 @@ def cleanup_audio(*files):
         if os.path.exists(file):
             os.remove(file)
 
-@app.route("/speech", methods=["POST"])
-def speech_to_text():
-    """Converts speech input to text"""
-    recognizer = sr.Recognizer()
-
-    if "audio" not in request.files:
-        return jsonify({"error": "No audio file provided"}), 400
-
-    audio_file = request.files["audio"]
-    with sr.AudioFile(audio_file) as source:
-        audio_data = recognizer.record(source)
-
-    try:
-        text = recognizer.recognize_google(audio_data)
-        return jsonify({"text": text})
-    except sr.UnknownValueError:
-        return jsonify({"error": "Could not understand the audio"}), 400
-    except sr.RequestError:
-        return jsonify({"error": "Speech recognition service is unavailable"}), 500
-
 @app.route("/")
 def serve_frontend():
     """Serves the chatbot UI"""
     html_content = """
-  <!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -182,7 +153,6 @@ def serve_frontend():
             position: absolute;
             top: 15px;
             right: 15px;
-            display: inline-block;
         }
 
         .menu-btn {
@@ -202,15 +172,10 @@ def serve_frontend():
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         .menu-dropdown.active {
             display: block;
-            opacity: 1;
-            transform: translateY(0);
         }
 
         .theme-btn {
@@ -223,42 +188,6 @@ def serve_frontend():
             width: 100%;
         }
 
-        /* Theme Dropdown */
-        .theme-dropdown {
-            display: none;
-            position: absolute;
-            top: 40px;
-            right: 0;
-            background: rgba(255, 255, 255, 0.9);
-            color: black;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            width: 150px;
-        }
-
-        .theme-dropdown.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .theme-option {
-            padding: 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        .theme-option:hover {
-            background: lightgray;
-        }
-
     </style>
 </head>
 <body>
@@ -267,13 +196,7 @@ def serve_frontend():
     <div class="menu-container">
         <button class="menu-btn" onclick="toggleMenu()">💬</button>
         <div class="menu-dropdown">
-            <button class="theme-btn" onclick="toggleThemeDropdown()">Change Theme</button>
-            <div class="theme-dropdown">
-                <div class="theme-option" onclick="setTheme('#ff006e', '#ffbe0b', '#000')">Cyber Glow</div>
-                <div class="theme-option" onclick="setTheme('#0d1b2a', '#00b4d8', '#fff')">Midnight Pulse</div>
-                <div class="theme-option" onclick="setTheme('#1a3c40', '#4CAF50', '#fff')">Aqua Surge</div>
-                <div class="theme-option" onclick="setTheme('#ff0000', '#8a2be2', '#fff')">Laser Beam</div>
-            </div>
+            <button class="theme-btn" onclick="changeTheme()">Change Theme</button>
         </div>
     </div>
 
@@ -282,30 +205,17 @@ def serve_frontend():
     <div class="chat-input">
         <input type="text" id="user-input" placeholder="Type a message">
         <button onclick="sendMessage()">Send</button>
+        <button onclick="startVoiceInput()">🔊</button>
     </div>
 
     <script>
         function toggleMenu() {
-            const menu = document.querySelector(".menu-dropdown");
-            menu.classList.toggle("active");
-            document.querySelector(".theme-dropdown").classList.remove("active"); // Hide theme menu if open
+            document.querySelector(".menu-dropdown").classList.toggle("active");
         }
 
-        function toggleThemeDropdown() {
-            const themeDropdown = document.querySelector(".theme-dropdown");
-            themeDropdown.classList.toggle("active");
-        }
-
-        function setTheme(primary, secondary, text) {
-            document.documentElement.style.setProperty('--primary-color', primary);
-            document.documentElement.style.setProperty('--secondary-color', secondary);
-            document.documentElement.style.setProperty('--text-color', text);
-            document.documentElement.style.setProperty('--user-message-bg', 'white');
-            document.documentElement.style.setProperty('--bot-message-bg', 'lightgreen');
-
-            // Close menu after selection
-            document.querySelector(".theme-dropdown").classList.remove("active");
-            document.querySelector(".menu-dropdown").classList.remove("active");
+        function changeTheme() {
+            document.documentElement.style.setProperty('--primary-color', '#ff006e');
+            document.documentElement.style.setProperty('--secondary-color', '#ffbe0b');
         }
 
         function sendMessage() {
@@ -323,9 +233,31 @@ def serve_frontend():
             .then(response => response.json())
             .then(data => {
                 chatContainer.innerHTML += `<div class='message bot'>${data.response}</div>`;
+                
+                fetch('/speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: data.response })
+                })
+                .then(res => res.blob())
+                .then(blob => {
+                    const audio = new Audio(URL.createObjectURL(blob));
+                    audio.play();
+                });
             });
 
             document.getElementById('user-input').value = '';
+        }
+
+        function startVoiceInput() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "en-US";
+
+            recognition.onresult = event => {
+                document.getElementById("user-input").value = event.results[0][0].transcript;
+            };
+
+            recognition.start();
         }
     </script>
 
