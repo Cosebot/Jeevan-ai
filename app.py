@@ -92,7 +92,7 @@ def speech_to_text():
 def serve_frontend():
     """Serves the chatbot UI"""
     html_content = """
-    <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -103,6 +103,8 @@ def serve_frontend():
             --primary-color: #1b1f3b;
             --secondary-color: white;
             --text-color: black;
+            --user-message-bg: white;
+            --bot-message-bg: lightgreen;
         }
 
         body {
@@ -117,11 +119,11 @@ def serve_frontend():
             margin: 0;
         }
 
-        #chat-box {
+        #chat-container {
             width: 90%;
             max-width: 400px;
             height: 60vh;
-            background-color: var(--secondary-color);
+            background-color: var(--primary-color);
             border-radius: 10px;
             padding: 10px;
             overflow-y: auto;
@@ -136,19 +138,21 @@ def serve_frontend():
         }
 
         .user {
-            background-color: #e1f7d5;
+            background-color: var(--user-message-bg);
             text-align: right;
+            color: black;
         }
 
         .bot {
-            background-color: #d8e3fc;
+            background-color: var(--bot-message-bg);
             text-align: left;
+            color: black;
         }
 
         .chat-input {
             display: flex;
             align-items: center;
-            background-color: white;
+            background-color: var(--secondary-color);
             border-radius: 30px;
             padding: 10px;
             width: 90%;
@@ -156,21 +160,124 @@ def serve_frontend():
             margin-top: 10px;
         }
 
-        #theme-btn {
+        .chat-input input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 10px;
+            font-size: 16px;
+            background: var(--secondary-color);
+        }
+
+        .chat-input button {
+            background-color: var(--secondary-color);
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        /* Dropdown Menu */
+        .menu-container {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: inline-block;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .menu-dropdown {
+            display: none;
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .menu-dropdown.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .theme-btn {
             background: yellow;
             border: none;
             cursor: pointer;
             font-size: 16px;
             padding: 10px;
             border-radius: 5px;
-            margin-bottom: 10px;
+            width: 100%;
         }
+
+        /* Theme Dropdown */
+        .theme-dropdown {
+            display: none;
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background: rgba(255, 255, 255, 0.9);
+            color: black;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            width: 150px;
+        }
+
+        .theme-dropdown.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .theme-option {
+            padding: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .theme-option:hover {
+            background: lightgray;
+        }
+
     </style>
 </head>
 <body>
 
-    <button id="theme-btn">Change Theme</button>
-    <div id="chat-box"></div>
+    <!-- Dropdown Menu Button -->
+    <div class="menu-container">
+        <button class="menu-btn" onclick="toggleMenu()">💬</button>
+        <div class="menu-dropdown">
+            <button class="theme-btn" onclick="toggleThemeDropdown()">Change Theme</button>
+            <div class="theme-dropdown">
+                <div class="theme-option" onclick="setTheme('#ff006e', '#ffbe0b', '#000')">Cyber Glow</div>
+                <div class="theme-option" onclick="setTheme('#0d1b2a', '#00b4d8', '#fff')">Midnight Pulse</div>
+                <div class="theme-option" onclick="setTheme('#1a3c40', '#4CAF50', '#fff')">Aqua Surge</div>
+                <div class="theme-option" onclick="setTheme('#ff0000', '#8a2be2', '#fff')">Laser Beam</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-container"></div>
 
     <div class="chat-input">
         <input type="text" id="user-input" placeholder="Type a message">
@@ -178,28 +285,36 @@ def serve_frontend():
     </div>
 
     <script>
-        let themeIndex = 0;
-        const themes = [
-            { primary: '#ff006e', secondary: '#ffbe0b', text: '#000' },
-            { primary: '#0d1b2a', secondary: '#00b4d8', text: '#fff' },
-            { primary: '#1a3c40', secondary: '#4CAF50', text: '#fff' },
-            { primary: '#ff0000', secondary: '#8a2be2', text: '#fff' }
-        ];
+        function toggleMenu() {
+            const menu = document.querySelector(".menu-dropdown");
+            menu.classList.toggle("active");
+            document.querySelector(".theme-dropdown").classList.remove("active"); // Hide theme menu if open
+        }
 
-        document.getElementById('theme-btn').addEventListener('click', () => {
-            themeIndex = (themeIndex + 1) % themes.length;
-            document.documentElement.style.setProperty('--primary-color', themes[themeIndex].primary);
-            document.documentElement.style.setProperty('--secondary-color', themes[themeIndex].secondary);
-            document.documentElement.style.setProperty('--text-color', themes[themeIndex].text);
-        });
+        function toggleThemeDropdown() {
+            const themeDropdown = document.querySelector(".theme-dropdown");
+            themeDropdown.classList.toggle("active");
+        }
+
+        function setTheme(primary, secondary, text) {
+            document.documentElement.style.setProperty('--primary-color', primary);
+            document.documentElement.style.setProperty('--secondary-color', secondary);
+            document.documentElement.style.setProperty('--text-color', text);
+            document.documentElement.style.setProperty('--user-message-bg', 'white');
+            document.documentElement.style.setProperty('--bot-message-bg', 'lightgreen');
+
+            // Close menu after selection
+            document.querySelector(".theme-dropdown").classList.remove("active");
+            document.querySelector(".menu-dropdown").classList.remove("active");
+        }
 
         function sendMessage() {
             const userInput = document.getElementById('user-input').value.trim();
             if (!userInput) return;
 
-            const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML += `<div class='message user'>${userInput}</div>`;
-            
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.innerHTML += `<div class='message user'>${userInput}</div>`;
+
             fetch('/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -207,7 +322,7 @@ def serve_frontend():
             })
             .then(response => response.json())
             .then(data => {
-                chatBox.innerHTML += `<div class='message bot'>${data.response}</div>`;
+                chatContainer.innerHTML += `<div class='message bot'>${data.response}</div>`;
             });
 
             document.getElementById('user-input').value = '';
