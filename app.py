@@ -1,67 +1,56 @@
-import os
 import requests
-import shutil
-from flask import Flask, request, jsonify, send_file, render_template_string
+from flask import Flask, request, jsonify, render_template_string
 
 app = Flask(__name__)
 
-# Create a temp folder for storing images
-TEMP_FOLDER = "temp_images"
-os.makedirs(TEMP_FOLDER, exist_ok=True)
-
-def delete_old_images():
-    """Deletes old images to prevent storage issues."""
-    if os.path.exists(TEMP_FOLDER):
-        shutil.rmtree(TEMP_FOLDER)
-        os.makedirs(TEMP_FOLDER, exist_ok=True)
-
-def get_image_from_lexica(prompt):
-    """Fetches an AI-generated image from Lexica Art."""
-    url = f"https://lexica.art/api/v1/search?q={prompt.replace(' ', '+')}"
-    response = requests.get(url)
+# Function to search DuckDuckGo
+def search_duckduckgo(query):
+    """Fetches the first 500 characters of a DuckDuckGo search result and provides a link."""
+    search_url = f"https://lite.duckduckgo.com/lite?q={query.replace(' ', '+')}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    
+    response = requests.get(search_url, headers=headers)
     if response.status_code == 200:
-        data = response.json()
-        if data["images"]:
-            return data["images"][0]["src"]  # First image result
-    return None
+        text_result = response.text[:500]  # Get first 500 characters
+        article_link = f"https://duckduckgo.com/?q={query.replace(' ', '+')}"  # Search link
+        return text_result.replace("\n", " "), article_link
+    
+    return "No relevant information found.", ""
 
+# Flask Routes
 @app.route('/')
 def home():
-    """Serve the Chat UI."""
-    return render_template_string(CHAT_HTML)
+    return render_template_string(HTML_CODE)
 
-@app.route('/generate', methods=['GET'])
-def generate_image():
-    """Generates an image using Lexica."""
-    prompt = request.args.get('prompt', '')
+@app.route('/ask', methods=['GET'])
+def ask_chatbot():
+    """Processes user input and returns the first 500 letters + a link."""
+    user_input = request.args.get('query', '').strip().lower()
+    
+    if any(user_input.startswith(word) for word in ["what", "where", "why", "how", "when"]):
+        search_results, article_link = search_duckduckgo(user_input)
+        return jsonify({"message": search_results, "link": article_link})
+    
+    return jsonify({"message": "I only answer questions starting with What/Where/Why/How/When."})
 
-    if not prompt:
-        return jsonify({"error": "No prompt provided"}), 400
-
-    image_url = get_image_from_lexica(prompt)
-
-    if image_url:
-        return jsonify({"message": "Image found!", "image_url": image_url})
-    else:
-        return jsonify({"error": "No image found"}), 500
-
-CHAT_HTML = """
+# HTML, CSS, and JS for the Chatbot UI
+HTML_CODE = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sanji AI Chat</title>
+    <title>DuckDuckGo AI Chatbot</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #chatbox { width: 60%; height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; margin: auto; }
-        #userInput { width: 60%; padding: 5px; margin-top: 10px; }
-        #sendBtn { padding: 5px; }
-        img { max-width: 300px; border-radius: 5px; }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #1e1e1e; color: #fff; }
+        #chatbox { width: 60%; height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; margin: auto; background: #333; color: #fff; border-radius: 10px; }
+        #userInput { width: 60%; padding: 10px; margin-top: 10px; background: #444; color: #fff; border: 1px solid #666; border-radius: 5px; }
+        #sendBtn { padding: 10px; background: #ff9900; border: none; color: #fff; cursor: pointer; border-radius: 5px; }
+        a { color: #ff9900; text-decoration: none; }
     </style>
 </head>
 <body>
-    <h2>Sanji AI Chat</h2>
+    <h2>DuckDuckGo AI Chatbot</h2>
     <div id="chatbox"></div>
-    <input type="text" id="userInput" placeholder="Type your message here">
+    <input type="text" id="userInput" placeholder="Ask me something">
     <button id="sendBtn" onclick="sendMessage()">Send</button>
 
     <script>
@@ -72,28 +61,23 @@ CHAT_HTML = """
             let userMessage = `<p><strong>You:</strong> ${input}</p>`;
             chatbox.innerHTML += userMessage;
 
-            if (input.toLowerCase().includes("generate an image of")) {
-                fetch(`/generate?prompt=${encodeURIComponent(input)}`)
+            fetch(`/ask?query=${encodeURIComponent(input)}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.image_url) {
-                        let botMessage = `<p><strong>Sanji AI:</strong> Here is your image:</p>
-                                          <img src="${data.image_url}" width="300px">`;
-                        chatbox.innerHTML += botMessage;
-                    } else {
-                        chatbox.innerHTML += `<p><strong>Sanji AI:</strong> No image found.</p>`;
+                    let botMessage = `<p><strong>Bot:</strong> ${data.message}</p>`;
+                    if (data.link) {
+                        botMessage += `<p>Read more: <a href='${data.link}' target='_blank'>Click here</a></p>`;
                     }
+                    chatbox.innerHTML += botMessage;
+                    chatbox.scrollTop = chatbox.scrollHeight;
                 });
-            } else {
-                chatbox.innerHTML += `<p><strong>Sanji AI:</strong> I didn't understand.</p>`;
-            }
 
-            document.getElementById("userInput").value = ""; // Clear input field
+            document.getElementById("userInput").value = "";
         }
     </script>
 </body>
 </html>
 """
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    app.run(debug=True)
