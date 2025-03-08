@@ -1,13 +1,5 @@
 flask
+gunicorn
 gtts
-random
-os
-base64
 requests
 speechrecognition
-pydub
-nltk
-textblob
-vaderSentiment
-numpy
-pandas
