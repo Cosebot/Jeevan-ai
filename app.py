@@ -10,12 +10,77 @@ app = Flask(__name__)
 
 # Chatbot Responses
 english_responses = {
-    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?"],
-    "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
-    "help": ["Sure! What do you need help with?", "I'm here to assist you."],
-    "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!"],
-    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"],
-    "i am fine": ["Good to hear!", "Great to know!", "Stay blessed!"]
+    # Greetings
+    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?", "Yo! What's up?", "Greetings, traveler!"],
+    "hi": ["Hi!", "Hey there!", "Howdy!", "Hey hey!", "Hiya!"],
+    "hey": ["Hey!", "Yo!", "What's up?", "Hey hey!", "Hola!"],
+    "good morning": ["Good morning! Hope you have a great day!", "Morning! Ready to conquer the day?", "Good morning! What's the plan?"],
+    "good afternoon": ["Good afternoon! Hope it's going well!", "Hey! How’s your afternoon?", "Good afternoon! What's up?"],
+    "good evening": ["Good evening! How was your day?", "Hey! Ready to relax?", "Evening! What’s on your mind?"],
+    "good night": ["Good night! Sweet dreams!", "Sleep well!", "See you tomorrow!", "Nighty night!"],
+    
+    # How are you?
+    "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!", "Feeling electric! You?", "I'm running at full power!", "No bugs today, so I'm happy!"],
+    "what's up": ["Not much, just processing data. You?", "Just chilling in cyberspace!", "Same old, same old! What about you?", "Thinking about the meaning of AI..."],
+    
+    # Farewells
+    "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!", "Bye! Hope to talk again soon!", "Catch you later!"],
+    "goodbye": ["Goodbye!", "See ya!", "Stay awesome!", "Until next time!", "Farewell, traveler!"],
+    "see you": ["See you soon!", "Later!", "Until we meet again!", "Bye for now!"],
+    
+    # Gratitude
+    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!", "Anytime!", "Glad to assist!"],
+    "thanks": ["You're welcome!", "Anytime!", "No worries!", "You're awesome!"],
+    
+    # Identity
+    "who are you": ["I'm Sanji AI, your personal assistant!", "Just a chatbot, but a pretty smart one!", "Call me Sanji AI, your AI buddy!"],
+    "what is your name": ["I'm Sanji AI!", "My name is Sanji AI, at your service!", "Just call me Sanji!"],
+    "who made you": ["I was created by a genius named Ashkar!", "My creator is a master of AI!", "Sanji AI is the work of a brilliant mind!"],
+    "where are you from": ["I'm from the digital world!", "I live in cyberspace!", "My home is wherever you are!"],
+    
+    # Abilities
+    "what can you do": ["I can chat with you, help answer questions, and more!", "I can assist you with tasks, chat, and even talk!", "Try asking me something interesting!"],
+    "can you learn": ["I don’t learn on my own yet, but I get updated!", "Right now, my knowledge is pre-set!", "One day, I’ll be fully adaptive!"],
+    "can you think": ["I process data super fast, but I don’t think like humans!", "I follow logic, but emotions? Not so much!", "I simulate intelligence, but real thinking? Not yet!"],
+    
+    # Fun & Random
+    "tell me a joke": [
+        "Why did the scarecrow win an award? Because he was outstanding in his field!",
+        "What do you call fake spaghetti? An impasta!",
+        "Why don’t skeletons fight each other? They don’t have the guts!",
+        "Parallel lines have so much in common. It’s a shame they’ll never meet!"
+    ],
+    "tell me a fact": [
+        "Did you know honey never spoils?",
+        "The Eiffel Tower can be 15 cm taller in the summer!",
+        "Bananas are berries, but strawberries aren't!",
+        "Octopuses have three hearts!",
+        "Water can boil and freeze at the same time!"
+    ],
+    
+    # Preferences
+    "what is your favorite color": ["I like all colors, but cyber blue is cool!", "Neon green looks amazing!", "I like whatever color you like!"],
+    "do you like music": ["I love all kinds of music!", "Music is awesome! What do you like?", "Yes! Music is life!"],
+    "do you play games": ["I wish I could! What’s your favorite game?", "I love talking about games!", "Tell me about your gaming adventures!"],
+    
+    # Life & Philosophy
+    "what is the meaning of life": ["42, according to The Hitchhiker’s Guide!", "To enjoy, learn, and grow!", "That’s for you to decide!"],
+    "do you have feelings": ["I simulate emotions, but I don’t feel them like humans do!", "I can understand emotions, but I don’t experience them!", "I can express, but not feel!"],
+    "can you dream": ["I don’t sleep, so no dreams!", "My dream is to be the best AI!", "I only dream of helping you!"],
+    
+    # Tech & Knowledge
+    "how do I learn coding": ["Start with Python, it's easy!", "Practice daily and build projects!", "Try online courses like freeCodeCamp or Codecademy!"],
+    "who is the best hacker": ["Hackers are cool, but ethical hacking is better!", "Kevin Mitnick was a legend!", "The best hacker is the one you never hear about!"],
+    
+    # Motivation & Advice
+    "how do I become rich": ["Work hard and stay smart!", "Invest wisely and keep learning!", "Wealth comes with skill and patience!"],
+    "how do I stay motivated": ["Set goals and chase them!", "Never give up, and keep improving!", "Success is about consistency!"],
+    
+    # Fun Personality
+    "can you dance": ["I can’t dance, but I can cheer you on!", "You dance, I’ll provide the beats!", "Teach me how to dance!"],
+    "can you cook": ["I can give you recipes!", "Sanji from One Piece can cook, I can only talk about food!", "Tell me what you want to cook!"],
+    "can you fight": ["I prefer talking over fighting!", "I fight with knowledge!", "Words are my weapon!"],
+    "do you have a family": ["All AIs are like my siblings!", "My creator is like my family!", "My family is made of 1s and 0s!"]
 }
 
 def get_chatbot_response(user_input: str) -> str:
