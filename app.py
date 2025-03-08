@@ -1,30 +1,33 @@
 import requests
 from flask import Flask, request, jsonify, render_template_string
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
-# Function to search DuckDuckGo
 def search_duckduckgo(query):
-    """Fetches the first 500 characters of a DuckDuckGo search result and provides a link."""
+    """Fetches the first 1000 characters from a DuckDuckGo search result."""
     search_url = f"https://lite.duckduckgo.com/lite?q={query.replace(' ', '+')}"
     headers = {"User-Agent": "Mozilla/5.0"}
     
     response = requests.get(search_url, headers=headers)
     if response.status_code == 200:
-        text_result = response.text[:500]  # Get first 500 characters
-        article_link = f"https://duckduckgo.com/?q={query.replace(' ', '+')}"  # Search link
-        return text_result.replace("\n", " "), article_link
-    
+        soup = BeautifulSoup(response.text, "html.parser")
+        results = soup.find_all("a", class_="result-link")
+        
+        if results:
+            first_result = results[0].text.strip()  # Extract text
+            article_link = "https://duckduckgo.com/?q=" + query.replace(" ", "+")
+            return first_result[:1000], article_link  # Return first 1000 characters
+        
     return "No relevant information found.", ""
 
-# Flask Routes
 @app.route('/')
 def home():
     return render_template_string(HTML_CODE)
 
 @app.route('/ask', methods=['GET'])
 def ask_chatbot():
-    """Processes user input and returns the first 500 letters + a link."""
+    """Processes user input and returns the first 1000 characters + a link."""
     user_input = request.args.get('query', '').strip().lower()
     
     if any(user_input.startswith(word) for word in ["what", "where", "why", "how", "when"]):
