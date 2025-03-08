@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 app = Flask(__name__)
 
 def search_duckduckgo(query):
-    """Fetches the first 1000 characters from a DuckDuckGo search result."""
+    """Fetches first result title, link, and article text from DuckDuckGo."""
     search_url = f"https://lite.duckduckgo.com/lite?q={query.replace(' ', '+')}"
     headers = {"User-Agent": "Mozilla/5.0"}
     
@@ -15,11 +15,28 @@ def search_duckduckgo(query):
         results = soup.find_all("a", class_="result-link")
         
         if results:
-            first_result = results[0].text.strip()  # Extract text
-            article_link = "https://duckduckgo.com/?q=" + query.replace(" ", "+")
-            return first_result[:1000], article_link  # Return first 1000 characters
+            article_title = results[0].text.strip()  
+            article_link = results[0]['href']
+            
+            # Fetch the actual article content
+            article_text = fetch_article_text(article_link)[:1000]  # First 1000 characters
+            return article_title, article_text, article_link
         
-    return "No relevant information found.", ""
+    return "No relevant information found.", "", ""
+
+def fetch_article_text(url):
+    """Scrapes the main text of the given article URL."""
+    try:
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers)
+        soup = BeautifulSoup(response.text, "html.parser")
+        
+        paragraphs = soup.find_all("p")  # Extract paragraphs
+        full_text = "\n".join([p.get_text() for p in paragraphs])  # Combine paragraphs
+        
+        return full_text.strip() if full_text else "No content found."
+    except:
+        return "Failed to fetch the article."
 
 @app.route('/')
 def home():
@@ -27,16 +44,16 @@ def home():
 
 @app.route('/ask', methods=['GET'])
 def ask_chatbot():
-    """Processes user input and returns the first 1000 characters + a link."""
+    """Processes user input and returns first 1000 characters + link."""
     user_input = request.args.get('query', '').strip().lower()
     
     if any(user_input.startswith(word) for word in ["what", "where", "why", "how", "when"]):
-        search_results, article_link = search_duckduckgo(user_input)
-        return jsonify({"message": search_results, "link": article_link})
+        title, search_results, article_link = search_duckduckgo(user_input)
+        return jsonify({"title": title, "message": search_results, "link": article_link})
     
     return jsonify({"message": "I only answer questions starting with What/Where/Why/How/When."})
 
-# HTML, CSS, and JS for the Chatbot UI
+# Frontend UI (HTML, CSS, and JS)
 HTML_CODE = """
 <!DOCTYPE html>
 <html>
@@ -67,9 +84,9 @@ HTML_CODE = """
             fetch(`/ask?query=${encodeURIComponent(input)}`)
                 .then(response => response.json())
                 .then(data => {
-                    let botMessage = `<p><strong>Bot:</strong> ${data.message}</p>`;
+                    let botMessage = `<p><strong>Bot:</strong> <b>${data.title}</b><br>${data.message}</p>`;
                     if (data.link) {
-                        botMessage += `<p>Read more: <a href='${data.link}' target='_blank'>Click here</a></p>`;
+                        botMessage += `<p>Read more: <a href='${data.link}' target='_blank'>Full article</a></p>`;
                     }
                     chatbox.innerHTML += botMessage;
                     chatbox.scrollTop = chatbox.scrollHeight;
