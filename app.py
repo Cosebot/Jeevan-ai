@@ -5,84 +5,17 @@ import random
 import threading
 import time
 import speech_recognition as sr
-from pydub import AudioSegment
-from pydub.effects import speedup
 
 app = Flask(__name__)
 
 # Chatbot Responses
 english_responses = {
-    # Greetings
-    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?", "Yo! What's up?", "Greetings, traveler!"],
-    "hi": ["Hi!", "Hey there!", "Howdy!", "Hey hey!", "Hiya!"],
-    "hey": ["Hey!", "Yo!", "What's up?", "Hey hey!", "Hola!"],
-    "good morning": ["Good morning! Hope you have a great day!", "Morning! Ready to conquer the day?", "Good morning! What's the plan?"],
-    "good afternoon": ["Good afternoon! Hope it's going well!", "Hey! How’s your afternoon?", "Good afternoon! What's up?"],
-    "good evening": ["Good evening! How was your day?", "Hey! Ready to relax?", "Evening! What’s on your mind?"],
-    "good night": ["Good night! Sweet dreams!", "Sleep well!", "See you tomorrow!", "Nighty night!"],
-    
-    # How are you?
-    "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!", "Feeling electric! You?", "I'm running at full power!", "No bugs today, so I'm happy!"],
-    "what's up": ["Not much, just processing data. You?", "Just chilling in cyberspace!", "Same old, same old! What about you?", "Thinking about the meaning of AI..."],
-    
-    # Farewells
-    "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!", "Bye! Hope to talk again soon!", "Catch you later!"],
-    "goodbye": ["Goodbye!", "See ya!", "Stay awesome!", "Until next time!", "Farewell, traveler!"],
-    "see you": ["See you soon!", "Later!", "Until we meet again!", "Bye for now!"],
-    
-    # Gratitude
-    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!", "Anytime!", "Glad to assist!"],
-    "thanks": ["You're welcome!", "Anytime!", "No worries!", "You're awesome!"],
-    
-    # Identity
-    "who are you": ["I'm Sanji AI, your personal assistant!", "Just a chatbot, but a pretty smart one!", "Call me Sanji AI, your AI buddy!"],
-    "what is your name": ["I'm Sanji AI!", "My name is Sanji AI, at your service!", "Just call me Sanji!"],
-    "who made you": ["I was created by a genius named Ashkar!", "My creator is a master of AI!", "Sanji AI is the work of a brilliant mind!"],
-    "where are you from": ["I'm from the digital world!", "I live in cyberspace!", "My home is wherever you are!"],
-    
-    # Abilities
-    "what can you do": ["I can chat with you, help answer questions, and more!", "I can assist you with tasks, chat, and even talk!", "Try asking me something interesting!"],
-    "can you learn": ["I don’t learn on my own yet, but I get updated!", "Right now, my knowledge is pre-set!", "One day, I’ll be fully adaptive!"],
-    "can you think": ["I process data super fast, but I don’t think like humans!", "I follow logic, but emotions? Not so much!", "I simulate intelligence, but real thinking? Not yet!"],
-    
-    # Fun & Random
-    "tell me a joke": [
-        "Why did the scarecrow win an award? Because he was outstanding in his field!",
-        "What do you call fake spaghetti? An impasta!",
-        "Why don’t skeletons fight each other? They don’t have the guts!",
-        "Parallel lines have so much in common. It’s a shame they’ll never meet!"
-    ],
-    "tell me a fact": [
-        "Did you know honey never spoils?",
-        "The Eiffel Tower can be 15 cm taller in the summer!",
-        "Bananas are berries, but strawberries aren't!",
-        "Octopuses have three hearts!",
-        "Water can boil and freeze at the same time!"
-    ],
-    
-    # Preferences
-    "what is your favorite color": ["I like all colors, but cyber blue is cool!", "Neon green looks amazing!", "I like whatever color you like!"],
-    "do you like music": ["I love all kinds of music!", "Music is awesome! What do you like?", "Yes! Music is life!"],
-    "do you play games": ["I wish I could! What’s your favorite game?", "I love talking about games!", "Tell me about your gaming adventures!"],
-    
-    # Life & Philosophy
-    "what is the meaning of life": ["42, according to The Hitchhiker’s Guide!", "To enjoy, learn, and grow!", "That’s for you to decide!"],
-    "do you have feelings": ["I simulate emotions, but I don’t feel them like humans do!", "I can understand emotions, but I don’t experience them!", "I can express, but not feel!"],
-    "can you dream": ["I don’t sleep, so no dreams!", "My dream is to be the best AI!", "I only dream of helping you!"],
-    
-    # Tech & Knowledge
-    "how do I learn coding": ["Start with Python, it's easy!", "Practice daily and build projects!", "Try online courses like freeCodeCamp or Codecademy!"],
-    "who is the best hacker": ["Hackers are cool, but ethical hacking is better!", "Kevin Mitnick was a legend!", "The best hacker is the one you never hear about!"],
-    
-    # Motivation & Advice
-    "how do I become rich": ["Work hard and stay smart!", "Invest wisely and keep learning!", "Wealth comes with skill and patience!"],
-    "how do I stay motivated": ["Set goals and chase them!", "Never give up, and keep improving!", "Success is about consistency!"],
-    
-    # Fun Personality
-    "can you dance": ["I can’t dance, but I can cheer you on!", "You dance, I’ll provide the beats!", "Teach me how to dance!"],
-    "can you cook": ["I can give you recipes!", "Sanji from One Piece can cook, I can only talk about food!", "Tell me what you want to cook!"],
-    "can you fight": ["I prefer talking over fighting!", "I fight with knowledge!", "Words are my weapon!"],
-    "do you have a family": ["All AIs are like my siblings!", "My creator is like my family!", "My family is made of 1s and 0s!"]
+    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?"],
+    "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
+    "help": ["Sure! What do you need help with?", "I'm here to assist you."],
+    "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!"],
+    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!"],
+    "i am fine": ["Good to hear!", "Great to know!", "Stay blessed!"]
 }
 
 def get_chatbot_response(user_input: str) -> str:
@@ -103,7 +36,7 @@ def chat():
 
 @app.route("/speak", methods=["POST"])
 def speak():
-    """Converts chatbot response to speech and modulates the voice"""
+    """Converts chatbot response to speech"""
     data = request.get_json()
     text = data.get("text", "")
 
@@ -114,17 +47,10 @@ def speak():
     filename = "temp.mp3"
     tts.save(filename)
 
-    # Modulate Voice (Change Pitch & Speed)
-    audio = AudioSegment.from_file(filename)
-    audio = speedup(audio, playback_speed=1.2)  # Increase speed
-    audio = audio + 6  # Increase pitch
-    modulated_filename = "modulated_temp.mp3"
-    audio.export(modulated_filename, format="mp3")
+    # Cleanup after 10 seconds
+    threading.Thread(target=cleanup_audio, args=(filename,)).start()
 
-    # Cleanup after some time
-    threading.Thread(target=cleanup_audio, args=(filename, modulated_filename)).start()
-
-    return send_file(modulated_filename, mimetype="audio/mpeg")
+    return send_file(filename, mimetype="audio/mpeg")
 
 def cleanup_audio(*files):
     """Deletes temp audio files after 10 seconds"""
@@ -133,31 +59,11 @@ def cleanup_audio(*files):
         if os.path.exists(file):
             os.remove(file)
 
-@app.route("/speech", methods=["POST"])
-def speech_to_text():
-    """Converts speech input to text"""
-    recognizer = sr.Recognizer()
-
-    if "audio" not in request.files:
-        return jsonify({"error": "No audio file provided"}), 400
-
-    audio_file = request.files["audio"]
-    with sr.AudioFile(audio_file) as source:
-        audio_data = recognizer.record(source)
-
-    try:
-        text = recognizer.recognize_google(audio_data)
-        return jsonify({"text": text})
-    except sr.UnknownValueError:
-        return jsonify({"error": "Could not understand the audio"}), 400
-    except sr.RequestError:
-        return jsonify({"error": "Speech recognition service is unavailable"}), 500
-
 @app.route("/")
 def serve_frontend():
     """Serves the chatbot UI"""
     html_content = """
-  <!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -247,7 +153,6 @@ def serve_frontend():
             position: absolute;
             top: 15px;
             right: 15px;
-            display: inline-block;
         }
 
         .menu-btn {
@@ -267,15 +172,10 @@ def serve_frontend():
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         .menu-dropdown.active {
             display: block;
-            opacity: 1;
-            transform: translateY(0);
         }
 
         .theme-btn {
@@ -288,42 +188,6 @@ def serve_frontend():
             width: 100%;
         }
 
-        /* Theme Dropdown */
-        .theme-dropdown {
-            display: none;
-            position: absolute;
-            top: 40px;
-            right: 0;
-            background: rgba(255, 255, 255, 0.9);
-            color: black;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            width: 150px;
-        }
-
-        .theme-dropdown.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .theme-option {
-            padding: 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-
-        .theme-option:hover {
-            background: lightgray;
-        }
-
     </style>
 </head>
 <body>
@@ -332,13 +196,7 @@ def serve_frontend():
     <div class="menu-container">
         <button class="menu-btn" onclick="toggleMenu()">💬</button>
         <div class="menu-dropdown">
-            <button class="theme-btn" onclick="toggleThemeDropdown()">Change Theme</button>
-            <div class="theme-dropdown">
-                <div class="theme-option" onclick="setTheme('#ff006e', '#ffbe0b', '#000')">Cyber Glow</div>
-                <div class="theme-option" onclick="setTheme('#0d1b2a', '#00b4d8', '#fff')">Midnight Pulse</div>
-                <div class="theme-option" onclick="setTheme('#1a3c40', '#4CAF50', '#fff')">Aqua Surge</div>
-                <div class="theme-option" onclick="setTheme('#ff0000', '#8a2be2', '#fff')">Laser Beam</div>
-            </div>
+            <button class="theme-btn" onclick="changeTheme()">Change Theme</button>
         </div>
     </div>
 
@@ -347,30 +205,17 @@ def serve_frontend():
     <div class="chat-input">
         <input type="text" id="user-input" placeholder="Type a message">
         <button onclick="sendMessage()">Send</button>
+        <button onclick="startVoiceInput()">🔊</button>
     </div>
 
     <script>
         function toggleMenu() {
-            const menu = document.querySelector(".menu-dropdown");
-            menu.classList.toggle("active");
-            document.querySelector(".theme-dropdown").classList.remove("active"); // Hide theme menu if open
+            document.querySelector(".menu-dropdown").classList.toggle("active");
         }
 
-        function toggleThemeDropdown() {
-            const themeDropdown = document.querySelector(".theme-dropdown");
-            themeDropdown.classList.toggle("active");
-        }
-
-        function setTheme(primary, secondary, text) {
-            document.documentElement.style.setProperty('--primary-color', primary);
-            document.documentElement.style.setProperty('--secondary-color', secondary);
-            document.documentElement.style.setProperty('--text-color', text);
-            document.documentElement.style.setProperty('--user-message-bg', 'white');
-            document.documentElement.style.setProperty('--bot-message-bg', 'lightgreen');
-
-            // Close menu after selection
-            document.querySelector(".theme-dropdown").classList.remove("active");
-            document.querySelector(".menu-dropdown").classList.remove("active");
+        function changeTheme() {
+            document.documentElement.style.setProperty('--primary-color', '#ff006e');
+            document.documentElement.style.setProperty('--secondary-color', '#ffbe0b');
         }
 
         function sendMessage() {
@@ -388,9 +233,31 @@ def serve_frontend():
             .then(response => response.json())
             .then(data => {
                 chatContainer.innerHTML += `<div class='message bot'>${data.response}</div>`;
+                
+                fetch('/speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: data.response })
+                })
+                .then(res => res.blob())
+                .then(blob => {
+                    const audio = new Audio(URL.createObjectURL(blob));
+                    audio.play();
+                });
             });
 
             document.getElementById('user-input').value = '';
+        }
+
+        function startVoiceInput() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "en-US";
+
+            recognition.onresult = event => {
+                document.getElementById("user-input").value = event.results[0][0].transcript;
+            };
+
+            recognition.start();
         }
     </script>
 
