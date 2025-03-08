@@ -1,11 +1,18 @@
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, send_file, render_template_string
+from gtts import gTTS
+import os
 import random
+import threading
+import time
+import speech_recognition as sr
+from pydub import AudioSegment
+from pydub.effects import speedup
 
 app = Flask(__name__)
 
 # Chatbot Responses
 english_responses = {
-    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?", "Sup dude?", "Hey my Homie. Howcha doing?"],
+    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?"],
     "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!"],
     "help": ["Sure! What do you need help with?", "I'm here to assist you."],
     "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!"],
@@ -29,6 +36,58 @@ def chat():
     response_text = get_chatbot_response(message)
     return jsonify({"response": response_text})
 
+@app.route("/speak", methods=["POST"])
+def speak():
+    """Converts chatbot response to speech and modulates the voice"""
+    data = request.get_json()
+    text = data.get("text", "")
+
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+
+    tts = gTTS(text=text, lang="en")
+    filename = "temp.mp3"
+    tts.save(filename)
+
+    # Modulate Voice (Change Pitch & Speed)
+    audio = AudioSegment.from_file(filename)
+    audio = speedup(audio, playback_speed=1.2)  # Increase speed
+    audio = audio + 6  # Increase pitch
+    modulated_filename = "modulated_temp.mp3"
+    audio.export(modulated_filename, format="mp3")
+
+    # Cleanup after some time
+    threading.Thread(target=cleanup_audio, args=(filename, modulated_filename)).start()
+
+    return send_file(modulated_filename, mimetype="audio/mpeg")
+
+def cleanup_audio(*files):
+    """Deletes temp audio files after 10 seconds"""
+    time.sleep(10)
+    for file in files:
+        if os.path.exists(file):
+            os.remove(file)
+
+@app.route("/speech", methods=["POST"])
+def speech_to_text():
+    """Converts speech input to text"""
+    recognizer = sr.Recognizer()
+
+    if "audio" not in request.files:
+        return jsonify({"error": "No audio file provided"}), 400
+
+    audio_file = request.files["audio"]
+    with sr.AudioFile(audio_file) as source:
+        audio_data = recognizer.record(source)
+
+    try:
+        text = recognizer.recognize_google(audio_data)
+        return jsonify({"text": text})
+    except sr.UnknownValueError:
+        return jsonify({"error": "Could not understand the audio"}), 400
+    except sr.RequestError:
+        return jsonify({"error": "Speech recognition service is unavailable"}), 500
+
 @app.route("/")
 def serve_frontend():
     """Serves the chatbot UI"""
@@ -39,161 +98,120 @@ def serve_frontend():
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sanji AI</title>
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <style>
         :root {
             --primary-color: #1b1f3b;
-            --secondary-color: #ffffff;
+            --secondary-color: white;
+            --text-color: black;
         }
 
-body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 100vh;
-    background-color: var(--primary-color);
-    color: var(--secondary-color);
-    justify-content: center;
-    margin: 0;
-    width: 100vw;
-    max-width: 430px;
-}
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            justify-content: center;
+            margin: 0;
+        }
 
-#chat-box {
-    width: 95%;
-    max-width: 400px;
-    height: 70vh;
-    background-color: white;
-    border-radius: 10px;
-    padding: 10px;
-    overflow-y: auto;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    color: black;
-}
+        #chat-box {
+            width: 90%;
+            max-width: 400px;
+            height: 60vh;
+            background-color: var(--secondary-color);
+            border-radius: 10px;
+            padding: 10px;
+            overflow-y: auto;
+            color: var(--text-color);
+        }
 
-.message {
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 5px;
-    max-width: 80%;
-}
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            max-width: 80%;
+        }
 
-.user {
-    background-color: #e1f7d5;
-    align-self: flex-end;
-    text-align: right;
-}
+        .user {
+            background-color: #e1f7d5;
+            text-align: right;
+        }
 
-.bot {
-    background-color: #d8e3fc;
-    align-self: flex-start;
-    text-align: left;
-}
+        .bot {
+            background-color: #d8e3fc;
+            text-align: left;
+        }
 
-.chat-input {
-    display: flex;
-    align-items: center;
-    background-color: white;
-    border-radius: 30px;
-    padding: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    width: 90%;
-    max-width: 500px;
-    margin-top: 10px;
-    position: relative;
-}
+        .chat-input {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            border-radius: 30px;
+            padding: 10px;
+            width: 90%;
+            max-width: 500px;
+            margin-top: 10px;
+        }
 
-.settings-btn {
-    background: yellow;
-    border: none;
-    cursor: pointer;
-    font-size: 20px;
-    padding: 10px;
-    border-radius: 50%;
-    position: absolute;
-    top: 10px;
-    right: 10px;
-}
-
-.dropdown {
-    position: absolute;
-    top: 50px;
-    right: 10px;
-    background: white;
-    border-radius: 5px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    display: none;
-    padding: 10px;
-}
-
-.dropdown button {
-    background: #1b1f3b;
-    color: white;
-    border: none;
-    padding: 10px;
-    cursor: pointer;
-    width: 100%;
-    text-align: left;
-}
-
-.dropdown button:hover {
-    background: #2a315a;
-}
-
+        #theme-btn {
+            background: yellow;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 
-    <button class="settings-btn" id="settings-btn">⚙️</button>
-
-    <div class="dropdown" id="dropdown-menu">
-        <button id="theme-btn">Change Theme</button>
-    </div>
-
+    <button id="theme-btn">Change Theme</button>
     <div id="chat-box"></div>
-    
+
     <div class="chat-input">
-        <input type="text" id="user-input" placeholder="Message">
+        <input type="text" id="user-input" placeholder="Type a message">
+        <button onclick="sendMessage()">Send</button>
     </div>
 
     <script>
         let themeIndex = 0;
-
         const themes = [
-            { primary: '#0d1b2a', secondary: '#00b4d8' },
-            { primary: '#1a3c40', secondary: '#4CAF50' },
-            { primary: '#ff006e', secondary: '#ffbe0b' },
-            { primary: '#ff0000', secondary: '#8a2be2' },
-            { primary: '#00a6fb', secondary: '#f72585' },
-            { primary: '#001f54', secondary: '#00ffff' },
-            { primary: '#ff4500', secondary: '#ffd700' },
-            { primary: '#6a0dad', secondary: '#00ffff' }
+            { primary: '#ff006e', secondary: '#ffbe0b', text: '#000' },
+            { primary: '#0d1b2a', secondary: '#00b4d8', text: '#fff' },
+            { primary: '#1a3c40', secondary: '#4CAF50', text: '#fff' },
+            { primary: '#ff0000', secondary: '#8a2be2', text: '#fff' }
         ];
 
         document.getElementById('theme-btn').addEventListener('click', () => {
             themeIndex = (themeIndex + 1) % themes.length;
             document.documentElement.style.setProperty('--primary-color', themes[themeIndex].primary);
             document.documentElement.style.setProperty('--secondary-color', themes[themeIndex].secondary);
+            document.documentElement.style.setProperty('--text-color', themes[themeIndex].text);
         });
 
-        document.getElementById('settings-btn').addEventListener('click', () => {
-            const dropdown = document.getElementById('dropdown-menu');
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-        });
-
-        document.getElementById('send-btn').addEventListener('click', () => {
-            const message = document.getElementById('user-input').value.trim();
-            if (!message) return;
+        function sendMessage() {
+            const userInput = document.getElementById('user-input').value.trim();
+            if (!userInput) return;
 
             const chatBox = document.getElementById('chat-box');
-            const messageDiv = document.createElement('div');
-            messageDiv.textContent = message;
-            messageDiv.className = "message user";
-            chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            chatBox.innerHTML += `<div class='message user'>${userInput}</div>`;
+            
+            fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: userInput })
+            })
+            .then(response => response.json())
+            .then(data => {
+                chatBox.innerHTML += `<div class='message bot'>${data.response}</div>`;
+            });
+
             document.getElementById('user-input').value = '';
-        });
+        }
     </script>
 
 </body>
