@@ -5,10 +5,7 @@ from flask import Flask, request, jsonify, send_file, render_template_string
 
 app = Flask(__name__)
 
-# Replace with your Hugging Face API token
-HF_TOKEN = "hf_xxx"  # Your Hugging Face token
-
-# Create a temp folder if it doesn't exist
+# Create a temp folder for storing images
 TEMP_FOLDER = "temp_images"
 os.makedirs(TEMP_FOLDER, exist_ok=True)
 
@@ -18,6 +15,16 @@ def delete_old_images():
         shutil.rmtree(TEMP_FOLDER)
         os.makedirs(TEMP_FOLDER, exist_ok=True)
 
+def get_image_from_lexica(prompt):
+    """Fetches an AI-generated image from Lexica Art."""
+    url = f"https://lexica.art/api/v1/search?q={prompt.replace(' ', '+')}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        if data["images"]:
+            return data["images"][0]["src"]  # First image result
+    return None
+
 @app.route('/')
 def home():
     """Serve the Chat UI."""
@@ -25,36 +32,18 @@ def home():
 
 @app.route('/generate', methods=['GET'])
 def generate_image():
-    """Generates an image using Hugging Face API."""
+    """Generates an image using Lexica."""
     prompt = request.args.get('prompt', '')
 
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
 
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-    payload = {"inputs": prompt}
+    image_url = get_image_from_lexica(prompt)
 
-    response = requests.post(
-        "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2",
-        headers=headers,
-        json=payload
-    )
-
-    if response.status_code == 200:
-        delete_old_images()  # Clean old images before saving new one
-        image_path = os.path.join(TEMP_FOLDER, "generated.png")
-
-        with open(image_path, "wb") as f:
-            f.write(response.content)
-
-        return jsonify({"message": "Image generated!", "image_url": f"/image/generated.png"})
+    if image_url:
+        return jsonify({"message": "Image found!", "image_url": image_url})
     else:
-        return jsonify({"error": "Failed to generate image"}), 500
-
-@app.route('/image/<filename>', methods=['GET'])
-def serve_image(filename):
-    """Serves generated images in chat."""
-    return send_file(os.path.join(TEMP_FOLDER, filename), mimetype='image/png')
+        return jsonify({"error": "No image found"}), 500
 
 CHAT_HTML = """
 <!DOCTYPE html>
@@ -92,7 +81,7 @@ CHAT_HTML = """
                                           <img src="${data.image_url}" width="300px">`;
                         chatbox.innerHTML += botMessage;
                     } else {
-                        chatbox.innerHTML += `<p><strong>Sanji AI:</strong> Error generating image.</p>`;
+                        chatbox.innerHTML += `<p><strong>Sanji AI:</strong> No image found.</p>`;
                     }
                 });
             } else {
