@@ -3,3 +3,4 @@ gunicorn
 gtts
 requests
 speechrecognition
+wikipedia
