@@ -166,10 +166,9 @@ def cleanup_audio(*files):
     for file in files:
         if os.path.exists(file):
             os.remove(file)
-
 @app.route("/")
 def serve_frontend():
-    """Serves the chatbot UI"""
+    """Serves the chatbot UI with 10 color themes"""
     html_content = """
     <!DOCTYPE html>
 <html lang="en">
@@ -256,7 +255,6 @@ def serve_frontend():
             font-size: 16px;
         }
 
-        /* Dropdown Menu */
         .menu-container {
             position: absolute;
             top: 15px;
@@ -290,21 +288,20 @@ def serve_frontend():
             background: yellow;
             border: none;
             cursor: pointer;
-            font-size: 16px;
-            padding: 10px;
+            font-size: 14px;
+            padding: 5px;
             border-radius: 5px;
             width: 100%;
+            margin-top: 5px;
         }
-
     </style>
 </head>
 <body>
 
-    <!-- Dropdown Menu Button -->
     <div class="menu-container">
-        <button class="menu-btn" onclick="toggleMenu()">💬</button>
-        <div class="menu-dropdown">
-            <button class="theme-btn" onclick="changeTheme()">Change Theme</button>
+        <button class="menu-btn" onclick="toggleMenu()">🎨</button>
+        <div class="menu-dropdown" id="themeMenu">
+            <!-- Theme buttons added here -->
         </div>
     </div>
 
@@ -317,13 +314,26 @@ def serve_frontend():
     </div>
 
     <script>
+        const themes = [
+            { name: "Electric Blue & Neon Pink", primary: "#0077ff", secondary: "#ff00aa" },
+            { name: "Sunset Orange & Deep Purple", primary: "#ff4500", secondary: "#4b0082" },
+            { name: "Mint Green & Lavender", primary: "#98ff98", secondary: "#e6e6fa" },
+            { name: "Black & Gold", primary: "#000000", secondary: "#ffd700" },
+            { name: "Cyan & Magenta", primary: "#00ffff", secondary: "#ff00ff" },
+            { name: "Teal & Coral", primary: "#008080", secondary: "#ff7f50" },
+            { name: "Crimson & Slate Gray", primary: "#dc143c", secondary: "#708090" },
+            { name: "Lime Green & Charcoal", primary: "#32cd32", secondary: "#36454f" },
+            { name: "Royal Blue & Silver", primary: "#4169e1", secondary: "#c0c0c0" },
+            { name: "Crimson Red & Cream", primary: "#b22222", secondary: "#fffdd0" }
+        ];
+
         function toggleMenu() {
             document.querySelector(".menu-dropdown").classList.toggle("active");
         }
 
-        function changeTheme() {
-            document.documentElement.style.setProperty('--primary-color', '#ff006e');
-            document.documentElement.style.setProperty('--secondary-color', '#ffbe0b');
+        function applyTheme(primary, secondary) {
+            document.documentElement.style.setProperty('--primary-color', primary);
+            document.documentElement.style.setProperty('--secondary-color', secondary);
         }
 
         function sendMessage() {
@@ -367,12 +377,22 @@ def serve_frontend():
 
             recognition.start();
         }
+
+        // Inject theme buttons dynamically
+        const menu = document.getElementById("themeMenu");
+        themes.forEach((theme, index) => {
+            const btn = document.createElement("button");
+            btn.className = "theme-btn";
+            btn.textContent = theme.name;
+            btn.onclick = () => applyTheme(theme.primary, theme.secondary);
+            menu.appendChild(btn);
+        });
     </script>
 
 </body>
 </html>
     """
-    return render_template_string(html_content)
+ return render_template_string(html_content)
 
 if __name__ == "__main__":
     app.run(debug=True)
