@@ -350,11 +350,12 @@ def serve_frontend():
             chatContainer.innerHTML += `<div class='message user'>${userInput}</div>`;
 
             fetch('/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userInput })
-            })
-            .then(data => {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: userInput })
+})
+.then(response => response.json())
+.then(data => {
     chatContainer.innerHTML += `<div class='message bot'>${data.response}</div>`;
     
     // Only speak if the response doesn't contain an iframe (video)
