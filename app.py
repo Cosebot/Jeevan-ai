@@ -181,6 +181,7 @@ def cleanup_audio(*files):
     for file in files:
         if os.path.exists(file):
             os.remove(file)
+
 def search_youtube_video(query):
     try:
         api_key = "AIzaSyDdwVlAq2eR5DSeGSOc7Xp2fsVEGsEcSM4"
@@ -384,21 +385,23 @@ def serve_frontend():
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: userInput })
             })
-            .then(response => response.json())
             .then(data => {
-                chatContainer.innerHTML += `<div class='message bot'>${data.response}</div>`;
-                
-                fetch('/speak', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: data.response })
-                })
-                .then(res => res.blob())
-                .then(blob => {
-                    const audio = new Audio(URL.createObjectURL(blob));
-                    audio.play();
-                });
-            });
+    chatContainer.innerHTML += `<div class='message bot'>${data.response}</div>`;
+    
+    // Only speak if the response doesn't contain an iframe (video)
+    if (!data.response.includes("<iframe")) {
+        fetch('/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: data.response })
+        })
+        .then(res => res.blob())
+        .then(blob => {
+            const audio = new Audio(URL.createObjectURL(blob));
+            audio.play();
+        });
+    }
+});
 
             document.getElementById('user-input').value = '';
         }
