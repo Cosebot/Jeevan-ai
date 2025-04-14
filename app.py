@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 
 app = Flask(name)
 
-Refined Chatbot Responses
+#Refined Chatbot Responses
 
 english_responses = { "hello": ["Hello there! How can I assist you today?", "Hi! Need anything?", "Hey! I'm here to help.", "Yo! What brings you here?"], "hi": ["Hi!", "Hey there!", "What's up?", "Hiya!"], "hey": ["Hey! How can I help?", "Yo! Ready to chat?", "Hey hey! Let's go."], "good morning": ["Good morning! Ready to crush the day?", "Morning! How can I help today?"], "good afternoon": ["Good afternoon! What's on your mind?", "Hey! How’s your day going?"], "good evening": ["Good evening! How was your day?", "Evening! I'm here if you need anything."], "good night": ["Good night! Catch you tomorrow.", "Sweet dreams!"],
 
