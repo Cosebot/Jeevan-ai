@@ -6,7 +6,8 @@ import threading
 import time 
 import speech_recognition as sr
 import wikipedia
-import re from googleapiclient.discovery import build
+import re
+from googleapiclient.discovery import build
 
 app = Flask(name)
 
