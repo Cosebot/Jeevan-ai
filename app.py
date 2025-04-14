@@ -66,7 +66,8 @@ english_responses = { "hello": ["Hello there! How can I assist you today?", "Hi!
 
 }
 
-The rest of the logic remains unchanged...
+#The rest of the logic remains unchanged...
+
 def get_chatbot_response(user_input: str) -> str:
     """Simple chatbot logic"""
     user_input = user_input.lower().strip()
