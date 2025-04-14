@@ -10,7 +10,6 @@ import re
 from googleapiclient.discovery import build
 
 app = Flask(__name__)
-
 #Refined Chatbot Responses
 
 english_responses = { "hello": ["Hello there! How can I assist you today?", "Hi! Need anything?", "Hey! I'm here to help.", "Yo! What brings you here?"], "hi": ["Hi!", "Hey there!", "What's up?", "Hiya!"], "hey": ["Hey! How can I help?", "Yo! Ready to chat?", "Hey hey! Let's go."], "good morning": ["Good morning! Ready to crush the day?", "Morning! How can I help today?"], "good afternoon": ["Good afternoon! What's on your mind?", "Hey! How’s your day going?"], "good evening": ["Good evening! How was your day?", "Evening! I'm here if you need anything."], "good night": ["Good night! Catch you tomorrow.", "Sweet dreams!"],
@@ -67,7 +66,6 @@ english_responses = { "hello": ["Hello there! How can I assist you today?", "Hi!
 }
 
 #The rest of the logic remains unchanged...
-
 def get_chatbot_response(user_input: str) -> str:
     """Simple chatbot logic"""
     user_input = user_input.lower().strip()
@@ -128,18 +126,6 @@ def chat():
             response_text = get_chatbot_response(message)
 
     return jsonify({"response": response_text})
-
-    # Detect type of question
-    intent = detect_query_type(message)
-
-    if intent in ["who", "what", "where"]:
-        topic = extract_topic(message)
-        response_text = search_wikipedia(topic)
-    else:
-        response_text = get_chatbot_response(message)
-
-    return jsonify({"response": response_text})
-
 @app.route("/speak", methods=["POST"])
 def speak():
     """Converts chatbot response to speech"""
