@@ -9,7 +9,7 @@ import wikipedia
 import re
 from googleapiclient.discovery import build
 
-app = Flask(name)
+app = Flask(__name__)
 
 #Refined Chatbot Responses
 
