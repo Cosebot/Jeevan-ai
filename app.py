@@ -7,7 +7,7 @@ import time
 import speech_recognition as sr
 import wikipedia
 import re
-
+from googleapiclient.discovery import build
 app = Flask(__name__)
 
 # Chatbot Responses
@@ -129,7 +129,22 @@ def search_wikipedia(query, sentences=2):
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json()
-    message = data.get("message", "")
+    message = data.get("message", "").lower().strip()
+
+    # Video intent
+    if message.startswith("play ") or message.startswith("show me ") or message.startswith("turn on "):
+        topic = message.replace("play ", "").replace("show me ", "").replace("turn on ", "")
+        response_text = search_youtube_video(topic)
+    else:
+        # Detect type of question
+        intent = detect_query_type(message)
+        if intent in ["who", "what", "where"]:
+            topic = extract_topic(message)
+            response_text = search_wikipedia(topic)
+        else:
+            response_text = get_chatbot_response(message)
+
+    return jsonify({"response": response_text})
 
     # Detect type of question
     intent = detect_query_type(message)
@@ -166,6 +181,27 @@ def cleanup_audio(*files):
     for file in files:
         if os.path.exists(file):
             os.remove(file)
+def search_youtube_video(query):
+    try:
+        api_key = "AIzaSyDdwVlAq2eR5DSeGSOc7Xp2fsVEGsEcSM4"
+        youtube = build("youtube", "v3", developerKey=api_key)
+        request = youtube.search().list(
+            part="snippet",
+            q=query,
+            type="video",
+            maxResults=1
+        )
+        response = request.execute()
+        items = response.get("items")
+        if items:
+            video_id = items[0]["id"]["videoId"]
+            title = items[0]["snippet"]["title"]
+            return f'<iframe width="100%" height="315" src="https://www.youtube.com/embed/{video_id}" frameborder="0" allowfullscreen></iframe><br>{title}'
+        else:
+            return "Sorry, I couldn't find a video for that."
+    except Exception as e:
+        return f"Error searching video: {str(e)}"
+
 @app.route("/")
 def serve_frontend():
     """Serves the chatbot UI with 10 color themes"""
