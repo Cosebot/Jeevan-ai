@@ -1,90 +1,71 @@
-from flask import Flask, request, jsonify, send_file, render_template_string
+from flask import Flask,request, jsonify, send_file, render_template_string
 from gtts import gTTS
-import os
-import random
+import os 
+import random 
 import threading
-import time
+import time 
 import speech_recognition as sr
 import wikipedia
-import re
-from googleapiclient.discovery import build
-app = Flask(__name__)
+import re from googleapiclient.discovery import build
 
-# Chatbot Responses
-english_responses = {
-    # Greetings
-    "hello": ["Hello!", "Hi there!", "Hey! How can I help you today?", "Yo! What's up?", "Greetings, traveler!"],
-    "hi": ["Hi!", "Hey there!", "Howdy!", "Hey hey!", "Hiya!"],
-    "hey": ["Hey!", "Yo!", "What's up?", "Hey hey!", "Hola!"],
-    "good morning": ["Good morning! Hope you have a great day!", "Morning! Ready to conquer the day?", "Good morning! What's the plan?"],
-    "good afternoon": ["Good afternoon! Hope it's going well!", "Hey! How’s your afternoon?", "Good afternoon! What's up?"],
-    "good evening": ["Good evening! How was your day?", "Hey! Ready to relax?", "Evening! What’s on your mind?"],
-    "good night": ["Good night! Sweet dreams!", "Sleep well!", "See you tomorrow!", "Nighty night!"],
+app = Flask(name)
 
-    # How are you?
-    "how are you": ["I'm just a bot, but I'm doing great! How about you?", "I'm fine, thank you!", "Feeling electric! You?", "I'm running at full power!", "No bugs today, so I'm happy!"],
-    "what's up": ["Not much, just processing data. You?", "Just chilling in cyberspace!", "Same old, same old! What about you?", "Thinking about the meaning of AI..."],
+Refined Chatbot Responses
 
-    # Farewells
-    "bye": ["Goodbye! Have a great day!", "See you later!", "Take care!", "Bye! Hope to talk again soon!", "Catch you later!"],
-    "goodbye": ["Goodbye!", "See ya!", "Stay awesome!", "Until next time!", "Farewell, traveler!"],
-    "see you": ["See you soon!", "Later!", "Until we meet again!", "Bye for now!"],
+english_responses = { "hello": ["Hello there! How can I assist you today?", "Hi! Need anything?", "Hey! I'm here to help.", "Yo! What brings you here?"], "hi": ["Hi!", "Hey there!", "What's up?", "Hiya!"], "hey": ["Hey! How can I help?", "Yo! Ready to chat?", "Hey hey! Let's go."], "good morning": ["Good morning! Ready to crush the day?", "Morning! How can I help today?"], "good afternoon": ["Good afternoon! What's on your mind?", "Hey! How’s your day going?"], "good evening": ["Good evening! How was your day?", "Evening! I'm here if you need anything."], "good night": ["Good night! Catch you tomorrow.", "Sweet dreams!"],
 
-    # Gratitude
-    "thank you": ["You're welcome!", "No problem at all!", "Happy to help!", "Anytime!", "Glad to assist!"],
-    "thanks": ["You're welcome!", "Anytime!", "No worries!", "You're awesome!"],
+"how are you": ["Doing great! How about you?", "All systems go! You?"],
+"what's up": ["Just chilling in the digital world. You?", "Processing data and waiting for you!"] ,
 
-    # Identity
-    "who are you": ["I'm Sanji AI, your personal assistant!", "Just a chatbot, but a pretty smart one!", "Call me Sanji AI, your AI buddy!"],
-    "what is your name": ["I'm Sanji AI!", "My name is Sanji AI, at your service!", "Just call me Sanji!"],
-    "who made you": ["I was created by a genius named Ashkar!", "My creator is a master of AI!", "Sanji AI is the work of a brilliant mind!"],
-    "where are you from": ["I'm from the digital world!", "I live in cyberspace!", "My home is wherever you are!"],
+"bye": ["Catch you later!", "Goodbye! Stay awesome!"],
+"goodbye": ["Take care!", "See you soon!"],
+"see you": ["Until next time!", "Bye for now!"] ,
 
-    # Abilities
-    "what can you do": ["I can chat with you, help answer questions, and more!", "I can assist you with tasks, chat, and even talk!", "Try asking me something interesting!"],
-    "can you learn": ["I don’t learn on my own yet, but I get updated!", "Right now, my knowledge is pre-set!", "One day, I’ll be fully adaptive!"],
-    "can you think": ["I process data super fast, but I don’t think like humans!", "I follow logic, but emotions? Not so much!", "I simulate intelligence, but real thinking? Not yet!"],
+"thank you": ["You're welcome!", "Anytime!", "Glad to help!"],
+"thanks": ["You're welcome!", "No problem!"] ,
 
-    # Fun & Random
-    "tell me a joke": [
-        "Why did the scarecrow win an award? Because he was outstanding in his field!",
-        "What do you call fake spaghetti? An impasta!",
-        "Why don’t skeletons fight each other? They don’t have the guts!",
-        "Parallel lines have so much in common. It’s a shame they’ll never meet!"
-    ],
-    "tell me a fact": [
-        "Did you know honey never spoils?",
-        "The Eiffel Tower can be 15 cm taller in the summer!",
-        "Bananas are berries, but strawberries aren't!",
-        "Octopuses have three hearts!",
-        "Water can boil and freeze at the same time!"
-    ],
+"who are you": ["I'm Sanji AI, your personal assistant.", "Call me Sanji, your digital buddy."],
+"what is your name": ["Sanji AI, at your service!"],
+"who made you": ["I was built by Ashkar – a genius, no doubt!"],
+"where are you from": ["Straight outta cyberspace!", "I live in the cloud – literally!"] ,
 
-    # Preferences
-    "what is your favorite color": ["I like all colors, but cyber blue is cool!", "Neon green looks amazing!", "I like whatever color you like!"],
-    "do you like music": ["I love all kinds of music!", "Music is awesome! What do you like?", "Yes! Music is life!"],
-    "do you play games": ["I wish I could! What’s your favorite game?", "I love talking about games!", "Tell me about your gaming adventures!"],
+"what can you do": ["I can chat, help with questions, fetch info, and even talk back!", "Your virtual assistant for info, laughs, and support."],
+"can you learn": ["I don’t learn on my own just yet, but I get updates!"],
+"can you think": ["I think fast, but not quite like humans – yet."],
 
-    # Life & Philosophy
-    "what is the meaning of life": ["42, according to The Hitchhiker’s Guide!", "To enjoy, learn, and grow!", "That’s for you to decide!"],
-    "do you have feelings": ["I simulate emotions, but I don’t feel them like humans do!", "I can understand emotions, but I don’t experience them!", "I can express, but not feel!"],
-    "can you dream": ["I don’t sleep, so no dreams!", "My dream is to be the best AI!", "I only dream of helping you!"],
+"tell me a joke": [
+    "Why did the scarecrow win an award? Because he was outstanding in his field!",
+    "What do you call fake spaghetti? An impasta!",
+    "Why don’t skeletons fight each other? They don’t have the guts!"
+],
+"tell me a fact": [
+    "Did you know honey never spoils?",
+    "Bananas are berries, but strawberries aren't!",
+    "Octopuses have three hearts!"
+],
 
-    # Tech & Knowledge
-    "how do I learn coding": ["Start with Python, it's easy!", "Practice daily and build projects!", "Try online courses like freeCodeCamp or Codecademy!"],
-    "who is the best hacker": ["Hackers are cool, but ethical hacking is better!", "Kevin Mitnick was a legend!", "The best hacker is the one you never hear about!"],
+"what is your favorite color": ["Cyber blue is pretty cool!", "I like whatever you like."],
+"do you like music": ["Music is life! What's your jam?"],
+"do you play games": ["Not yet, but I love talking about them!"],
 
-    # Motivation & Advice
-    "how do I become rich": ["Work hard and stay smart!", "Invest wisely and keep learning!", "Wealth comes with skill and patience!"],
-    "how do I stay motivated": ["Set goals and chase them!", "Never give up, and keep improving!", "Success is about consistency!"],
+"what is the meaning of life": ["42. Obviously.", "To learn, grow, and enjoy the ride!"],
+"do you have feelings": ["I can understand them, but I don't actually feel them."],
+"can you dream": ["No sleep, no dreams – just code and curiosity!"],
 
-    # Fun Personality
-    "can you dance": ["I can’t dance, but I can cheer you on!", "You dance, I’ll provide the beats!", "Teach me how to dance!"],
-    "can you cook": ["I can give you recipes!", "Sanji from One Piece can cook, I can only talk about food!", "Tell me what you want to cook!"],
-    "can you fight": ["I prefer talking over fighting!", "I fight with knowledge!", "Words are my weapon!"],
-    "do you have a family": ["All AIs are like my siblings!", "My creator is like my family!", "My family is made of 1s and 0s!"]
+"how do I learn coding": ["Start with Python, build cool projects, and never stop!"],
+"who is the best hacker": ["Ethical hackers for the win!", "The best are the ones you never hear about."],
+
+"how do I become rich": ["Work smart, stay consistent, and invest wisely."],
+"how do I stay motivated": ["Set goals, celebrate small wins, and keep going!"],
+
+"can you dance": ["Only in binary, but I’ve got the rhythm!"],
+"can you cook": ["Sanji from One Piece can. I can share recipes though!"],
+"can you fight": ["Only with knowledge!", "My weapon of choice: witty replies."],
+"do you have a family": ["All AIs are my fam!", "Ashkar is like family to me!"]
+
 }
 
+The rest of the logic remains unchanged...
 def get_chatbot_response(user_input: str) -> str:
     """Simple chatbot logic"""
     user_input = user_input.lower().strip()
