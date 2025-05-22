@@ -195,227 +195,213 @@ def search_youtube_video(query):
 def serve_frontend():
     """Serves the chatbot UI with 10 color themes"""
     html_content = """
-    <!DOCTYPE html>
-<html lang="en">
+  <!DOCTYPE html><html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sanji AI</title>
-    <style>
-        :root {
-            --primary-color: #1b1f3b;
-            --secondary-color: white;
-            --text-color: black;
-            --user-message-bg: white;
-            --bot-message-bg: lightgreen;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sanji AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #0E0307;
+      --secondary-color: #6E33B1;
+      --accent-color: #38E6A2;
+      --bot-message-bg: #COB4E3;
+      --user-message-bg: #EEEBF3;
+      --text-color: #FFFFFF;
+    }body {
+  margin: 0;
+  font-family: 'SF Pro Display', sans-serif;
+  background: radial-gradient(circle at top, #6E33B1, #0E0307);
+  color: var(--text-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+  justify-content: center;
+}
 
-        body {
-            font-family: Arial, sans-serif;
-            background-color: var(--primary-color);
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            justify-content: center;
-            margin: 0;
-        }
+#chat-container {
+  width: 90%;
+  max-width: 420px;
+  height: 60vh;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 15px;
+  overflow-y: auto;
+  box-shadow: 0 0 20px rgba(206, 180, 227, 0.3);
+}
 
-        #chat-container {
-            width: 90%;
-            max-width: 400px;
-            height: 60vh;
-            background-color: var(--primary-color);
-            border-radius: 10px;
-            padding: 10px;
-            overflow-y: auto;
-            color: var(--text-color);
-        }
+.message {
+  padding: 12px 16px;
+  margin: 10px 0;
+  border-radius: 20px;
+  max-width: 80%;
+  font-size: 15px;
+}
 
-        .message {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 5px;
-            max-width: 80%;
-        }
+.user {
+  background: var(--user-message-bg);
+  color: #000;
+  align-self: flex-end;
+}
 
-        .user {
-            background-color: var(--user-message-bg);
-            text-align: right;
-            color: black;
-        }
+.bot {
+  background: var(--bot-message-bg);
+  color: #000;
+  align-self: flex-start;
+}
 
-        .bot {
-            background-color: var(--bot-message-bg);
-            text-align: left;
-            color: black;
-        }
+.chat-input {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 10px;
+  width: 90%;
+  max-width: 500px;
+  margin-top: 20px;
+  box-shadow: 0 0 10px #6E33B1;
+}
 
-        .chat-input {
-            display: flex;
-            align-items: center;
-            background-color: var(--secondary-color);
-            border-radius: 30px;
-            padding: 10px;
-            width: 90%;
-            max-width: 500px;
-            margin-top: 10px;
-        }
+.chat-input input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 12px;
+  font-size: 16px;
+  background: transparent;
+  color: white;
+}
 
-        .chat-input input {
-            flex: 1;
-            border: none;
-            outline: none;
-            padding: 10px;
-            font-size: 16px;
-            background: var(--secondary-color);
-        }
+.chat-input button {
+  background: linear-gradient(145deg, #6E33B1, #COB4E3);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 15px;
+  margin-left: 10px;
+  box-shadow: 0 0 10px #6E33B1;
+  cursor: pointer;
+}
 
-        .chat-input button {
-            background-color: var(--secondary-color);
-            border: none;
-            cursor: pointer;
-            padding: 10px;
-            font-size: 16px;
-        }
+.menu-container {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+}
 
-        .menu-container {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-        }
+.menu-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: var(--accent-color);
+  cursor: pointer;
+}
 
-        .menu-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-        }
+.menu-dropdown {
+  display: none;
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
+}
 
-        .menu-dropdown {
-            display: none;
-            position: absolute;
-            top: 40px;
-            right: 0;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-        }
+.menu-dropdown.active {
+  display: block;
+}
 
-        .menu-dropdown.active {
-            display: block;
-        }
+.theme-btn {
+  background: #6E33B1;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  margin-top: 5px;
+  width: 100%;
+}
 
-        .theme-btn {
-            background: yellow;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            padding: 5px;
-            border-radius: 5px;
-            width: 100%;
-            margin-top: 5px;
-        }
-    </style>
+  </style>
 </head>
 <body>
+  <div class="menu-container">
+    <button class="menu-btn" onclick="toggleMenu()">⚙️</button>
+    <div class="menu-dropdown" id="themeMenu"></div>
+  </div>  <div id="chat-container"></div>  <div class="chat-input">
+    <input type="text" id="user-input" placeholder="Type a message" />
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="startVoiceInput()">🎙️</button>
+  </div>  <script>
+    const themes = [
+      { name: "Glitch Effect", primary: "#6E33B1", secondary: "#COB4E3" },
+      { name: "Neon Pulse", primary: "#38E6A2", secondary: "#6E33B1" },
+      { name: "Cyber Light", primary: "#EEEBF3", secondary: "#0E0307" }
+    ];
 
-    <div class="menu-container">
-        <button class="menu-btn" onclick="toggleMenu()">🎨</button>
-        <div class="menu-dropdown" id="themeMenu">
-            <!-- Theme buttons added here -->
-        </div>
-    </div>
+    function toggleMenu() {
+      document.querySelector(".menu-dropdown").classList.toggle("active");
+    }
 
-    <div id="chat-container"></div>
+    function applyTheme(primary, secondary) {
+      document.documentElement.style.setProperty('--primary-color', primary);
+      document.documentElement.style.setProperty('--secondary-color', secondary);
+    }
 
-    <div class="chat-input">
-        <input type="text" id="user-input" placeholder="Type a message">
-        <button onclick="sendMessage()">Send</button>
-        <button onclick="startVoiceInput()">🔊</button>
-    </div>
+    function sendMessage() {
+      const userInput = document.getElementById('user-input').value.trim();
+      if (!userInput) return;
+      const chatContainer = document.getElementById('chat-container');
+      chatContainer.innerHTML += `<div class='message user'>${userInput}</div>`;
 
-    <script>
-        const themes = [
-            { name: "Electric Blue & Neon Pink", primary: "#0077ff", secondary: "#ff00aa" },
-            { name: "Sunset Orange & Deep Purple", primary: "#ff4500", secondary: "#4b0082" },
-            { name: "Mint Green & Lavender", primary: "#98ff98", secondary: "#e6e6fa" },
-            { name: "Black & Gold", primary: "#000000", secondary: "#ffd700" },
-            { name: "Cyan & Magenta", primary: "#00ffff", secondary: "#ff00ff" },
-            { name: "Teal & Coral", primary: "#008080", secondary: "#ff7f50" },
-            { name: "Crimson & Slate Gray", primary: "#dc143c", secondary: "#708090" },
-            { name: "Lime Green & Charcoal", primary: "#32cd32", secondary: "#36454f" },
-            { name: "Royal Blue & Silver", primary: "#4169e1", secondary: "#c0c0c0" },
-            { name: "Crimson Red & Cream", primary: "#b22222", secondary: "#fffdd0" }
-        ];
-
-        function toggleMenu() {
-            document.querySelector(".menu-dropdown").classList.toggle("active");
-        }
-
-        function applyTheme(primary, secondary) {
-            document.documentElement.style.setProperty('--primary-color', primary);
-            document.documentElement.style.setProperty('--secondary-color', secondary);
-        }
-
-        function sendMessage() {
-            const userInput = document.getElementById('user-input').value.trim();
-            if (!userInput) return;
-
-            const chatContainer = document.getElementById('chat-container');
-            chatContainer.innerHTML += `<div class='message user'>${userInput}</div>`;
-
-            fetch('/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: userInput })
-})
-.then(response => response.json())
-.then(data => {
-    chatContainer.innerHTML += `<div class='message bot'>${data.response}</div>`;
-    
-    // Only speak if the response doesn't contain an iframe (video)
-    if (!data.response.includes("<iframe")) {
-        fetch('/speak', {
+      fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userInput })
+      })
+      .then(res => res.json())
+      .then(data => {
+        chatContainer.innerHTML += `<div class='message bot'>${data.response}</div>`;
+        if (!data.response.includes("<iframe")) {
+          fetch('/speak', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: data.response })
-        })
-        .then(res => res.blob())
-        .then(blob => {
-            const audio = new Audio(URL.createObjectURL(blob));
-            audio.play();
-        });
+          })
+          .then(res => res.blob())
+          .then(blob => new Audio(URL.createObjectURL(blob)).play());
+        }
+      });
+
+      document.getElementById('user-input').value = '';
     }
-});
 
-            document.getElementById('user-input').value = '';
-        }
+    function startVoiceInput() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-US";
+      recognition.onresult = event => {
+        document.getElementById("user-input").value = event.results[0][0].transcript;
+      };
+      recognition.start();
+    }
 
-        function startVoiceInput() {
-            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = "en-US";
-
-            recognition.onresult = event => {
-                document.getElementById("user-input").value = event.results[0][0].transcript;
-            };
-
-            recognition.start();
-        }
-
-        // Inject theme buttons dynamically
-        const menu = document.getElementById("themeMenu");
-        themes.forEach((theme, index) => {
-            const btn = document.createElement("button");
-            btn.className = "theme-btn";
-            btn.textContent = theme.name;
-            btn.onclick = () => applyTheme(theme.primary, theme.secondary);
-            menu.appendChild(btn);
-        });
-    </script>
+    const menu = document.getElementById("themeMenu");
+    themes.forEach(theme => {
+      const btn = document.createElement("button");
+      btn.className = "theme-btn";
+      btn.textContent = theme.name;
+      btn.onclick = () => applyTheme(theme.primary, theme.secondary);
+      menu.appendChild(btn);
+    });
+  </script> 
 </body>
 </html>
     """
