@@ -5,4 +5,3 @@ requests
 speechrecognition
 wikipedia
 google-api-python-client
-google-generativeai
