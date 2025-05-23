@@ -1,4 +1,4 @@
-from flask import Flask,request, jsonify, send_file, render_template_string
+from flask import Flask, request, jsonify, send_file, render_template_string
 from gtts import gTTS
 import os 
 import random 
@@ -8,7 +8,7 @@ import speech_recognition as sr
 import wikipedia
 import re
 from googleapiclient.discovery import build
-from difflib import get_close_matches  # for fuzzy matching
+from difflib import get_close_matches
 
 app = Flask(__name__)
 #Refined Chatbot Responses
@@ -191,219 +191,159 @@ def search_youtube_video(query):
     except Exception as e:
         return f"Error searching video: {str(e)}"
 
+
 @app.route("/")
 def serve_frontend():
-    """Serves the chatbot UI with 10 color themes"""
     html_content = """
-  <!DOCTYPE html><html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sanji AI</title>
-  <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary-color: #0E0307;
-      --secondary-color: #6E33B1;
-      --accent-color: #38E6A2;
-      --bot-message-bg: #COB4E3;
-      --user-message-bg: #EEEBF3;
-      --text-color: #FFFFFF;
-    }body {
-  margin: 0;
-  font-family: 'SF Pro Display', sans-serif;
-  background: radial-gradient(circle at top, #6E33B1, #0E0307);
-  color: var(--text-color);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100vh;
-  justify-content: center;
-}
+    <!DOCTYPE html>
+    <html lang=\"en\">
+    <head>
+        <meta charset=\"UTF-8\">
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+        <title>Sanji AI</title>
+        <link href=\"https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap\" rel=\"stylesheet\">
+        <style>
+            body {
+                margin: 0;
+                font-family: 'SF Pro Display', sans-serif;
+                background: radial-gradient(ellipse at center, #0E0307 0%, #1b0b2e 100%);
+                color: #EEEBF3;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                height: 100vh;
+                overflow: hidden;
+            }
 
-#chat-container {
-  width: 90%;
-  max-width: 420px;
-  height: 60vh;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 15px;
-  overflow-y: auto;
-  box-shadow: 0 0 20px rgba(206, 180, 227, 0.3);
-}
+            #chat-container {
+                width: 90%;
+                max-width: 400px;
+                height: 60vh;
+                background: rgba(255,255,255,0.05);
+                border-radius: 20px;
+                padding: 15px;
+                margin-top: 60px;
+                overflow-y: auto;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 0 20px #6E33B1;
+            }
 
-.message {
-  padding: 12px 16px;
-  margin: 10px 0;
-  border-radius: 20px;
-  max-width: 80%;
-  font-size: 15px;
-}
+            .message {
+                padding: 10px 15px;
+                margin: 10px 0;
+                border-radius: 12px;
+                max-width: 80%;
+                word-wrap: break-word;
+            }
 
-.user {
-  background: var(--user-message-bg);
-  color: #000;
-  align-self: flex-end;
-}
+            .user {
+                background: #38E6A2;
+                align-self: flex-end;
+                text-align: right;
+                color: #0E0307;
+            }
 
-.bot {
-  background: var(--bot-message-bg);
-  color: #000;
-  align-self: flex-start;
-}
+            .bot {
+                background: #6E33B1;
+                align-self: flex-start;
+                text-align: left;
+                color: #EEEBF3;
+            }
 
-.chat-input {
-  display: flex;
-  align-items: center;
-  background-color: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 10px;
-  width: 90%;
-  max-width: 500px;
-  margin-top: 20px;
-  box-shadow: 0 0 10px #6E33B1;
-}
+            .chat-input {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-top: 20px;
+                width: 90%;
+                max-width: 400px;
+            }
 
-.chat-input input {
-  flex: 1;
-  border: none;
-  outline: none;
-  padding: 12px;
-  font-size: 16px;
-  background: transparent;
-  color: white;
-}
+            .chat-input input {
+                flex: 1;
+                padding: 12px;
+                border-radius: 30px;
+                border: none;
+                outline: none;
+                background: #C0B4E3;
+                color: #0E0307;
+                font-size: 16px;
+            }
 
-.chat-input button {
-  background: linear-gradient(145deg, #6E33B1, #COB4E3);
-  color: white;
-  font-weight: 600;
-  border: none;
-  border-radius: 12px;
-  padding: 10px 15px;
-  margin-left: 10px;
-  box-shadow: 0 0 10px #6E33B1;
-  cursor: pointer;
-}
+            .chat-input button {
+                background: #6E33B1;
+                color: #fff;
+                border: none;
+                border-radius: 30px;
+                padding: 10px 15px;
+                cursor: pointer;
+            }
 
-.menu-container {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-}
+            .chat-input button:hover {
+                background: #8f45f4;
+            }
 
-.menu-btn {
-  background: none;
-  border: none;
-  font-size: 28px;
-  color: var(--accent-color);
-  cursor: pointer;
-}
+            .glow {
+                text-shadow: 0 0 5px #fff, 0 0 10px #6E33B1, 0 0 15px #6E33B1;
+            }
+        </style>
+    </head>
+    <body>
+        <h1 class=\"glow\">Sanji AI</h1>
+        <div id=\"chat-container\"></div>
 
-.menu-dropdown {
-  display: none;
-  position: absolute;
-  top: 40px;
-  right: 0;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 10px;
-  border-radius: 10px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.3);
-}
+        <div class=\"chat-input\">
+            <input type=\"text\" id=\"user-input\" placeholder=\"Type a message...\">
+            <button onclick=\"sendMessage()\">Send</button>
+            <button onclick=\"startVoiceInput()\">🎤</button>
+        </div>
 
-.menu-dropdown.active {
-  display: block;
-}
+        <script>
+            function sendMessage() {
+                const input = document.getElementById("user-input");
+                const message = input.value.trim();
+                if (!message) return;
 
-.theme-btn {
-  background: #6E33B1;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  margin-top: 5px;
-  width: 100%;
-}
+                const chat = document.getElementById("chat-container");
+                chat.innerHTML += `<div class='message user'>${message}</div>`;
 
-  </style>
-</head>
-<body>
-  <div class="menu-container">
-    <button class="menu-btn" onclick="toggleMenu()">⚙️</button>
-    <div class="menu-dropdown" id="themeMenu"></div>
-  </div>  <div id="chat-container"></div>  <div class="chat-input">
-    <input type="text" id="user-input" placeholder="Type a message" />
-    <button onclick="sendMessage()">Send</button>
-    <button onclick="startVoiceInput()">🎙️</button>
-  </div>  <script>
-    const themes = [
-      { name: "Glitch Effect", primary: "#6E33B1", secondary: "#COB4E3" },
-      { name: "Neon Pulse", primary: "#38E6A2", secondary: "#6E33B1" },
-      { name: "Cyber Light", primary: "#EEEBF3", secondary: "#0E0307" }
-    ];
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    chat.innerHTML += `<div class='message bot'>${data.response}</div>`;
+                    if (!data.response.includes("<iframe")) {
+                        fetch('/speak', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text: data.response })
+                        })
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const audio = new Audio(URL.createObjectURL(blob));
+                            audio.play();
+                        });
+                    }
+                });
 
-    function toggleMenu() {
-      document.querySelector(".menu-dropdown").classList.toggle("active");
-    }
+                input.value = "";
+            }
 
-    function applyTheme(primary, secondary) {
-      document.documentElement.style.setProperty('--primary-color', primary);
-      document.documentElement.style.setProperty('--secondary-color', secondary);
-    }
-
-    function sendMessage() {
-      const userInput = document.getElementById('user-input').value.trim();
-      if (!userInput) return;
-      const chatContainer = document.getElementById('chat-container');
-      chatContainer.innerHTML += `<div class='message user'>${userInput}</div>`;
-
-      fetch('/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userInput })
-      })
-      .then(res => res.json())
-      .then(data => {
-        chatContainer.innerHTML += `<div class='message bot'>${data.response}</div>`;
-        if (!data.response.includes("<iframe")) {
-          fetch('/speak', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: data.response })
-          })
-          .then(res => res.blob())
-          .then(blob => new Audio(URL.createObjectURL(blob)).play());
-        }
-      });
-
-      document.getElementById('user-input').value = '';
-    }
-
-    function startVoiceInput() {
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = "en-US";
-      recognition.onresult = event => {
-        document.getElementById("user-input").value = event.results[0][0].transcript;
-      };
-      recognition.start();
-    }
-
-    const menu = document.getElementById("themeMenu");
-    themes.forEach(theme => {
-      const btn = document.createElement("button");
-      btn.className = "theme-btn";
-      btn.textContent = theme.name;
-      btn.onclick = () => applyTheme(theme.primary, theme.secondary);
-      menu.appendChild(btn);
-    });
-  </script> 
-</body>
-</html>
+            function startVoiceInput() {
+                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.lang = "en-US";
+                recognition.onresult = e => {
+                    document.getElementById("user-input").value = e.results[0][0].transcript;
+                };
+                recognition.start();
+            }
+        </script>
+    </body>
+    </html>
     """
     return render_template_string(html_content)
 
