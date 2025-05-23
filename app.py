@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify, send_file, render_template_string
 from gtts import gTTS
-import os 
-import random 
+import os
+import random
 import threading
-import time 
+import time
 import speech_recognition as sr
 import wikipedia
 import re
