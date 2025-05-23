@@ -1,5 +1,10 @@
-from flask import Flask, request, jsonify, send_file, 
-render_template_string
+from flask import (
+    Flask,
+    request,
+    jsonify,
+    send_file,
+    render_template_string
+)
 from gtts import gTTS
 import os
 import random
