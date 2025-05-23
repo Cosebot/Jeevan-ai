@@ -190,162 +190,194 @@ def search_youtube_video(query):
             return "Sorry, I couldn't find a video for that."
     except Exception as e:
         return f"Error searching video: {str(e)}"
+from flask import Flask, request, jsonify, send_file, render_template_string from gtts import gTTS import os import random import threading import time import speech_recognition as sr import wikipedia import re from googleapiclient.discovery import build from difflib import get_close_matches
 
+app = Flask(name)
 
-@app.route("/")
-def serve_frontend():
-    html_content = """
-    <!DOCTYPE html>
-    <html lang=\"en\">
-    <head>
-        <meta charset=\"UTF-8\">
-        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
-        <title>Sanji AI</title>
-        <link href=\"https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap\" rel=\"stylesheet\">
-        <style>
-            body {
-                margin: 0;
-                font-family: 'SF Pro Display', sans-serif;
-                background: radial-gradient(ellipse at center, #0E0307 0%, #1b0b2e 100%);
-                color: #EEEBF3;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
-                height: 100vh;
-                overflow: hidden;
-            }
+@app.route("/") def serve_frontend(): html_content = """ <!DOCTYPE html> <html lang="en"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Sanji AI</title> <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&display=swap" rel="stylesheet"> <script src="https://unpkg.com/@supabase/supabase-js"></script> <style> body { margin: 0; font-family: 'SF Pro Display', sans-serif; background: radial-gradient(circle at top, #0E0307 0%, #1b0b2e 100%); color: #EEEBF3; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
 
-            #chat-container {
-                width: 90%;
-                max-width: 400px;
-                height: 60vh;
-                background: rgba(255,255,255,0.05);
-                border-radius: 20px;
-                padding: 15px;
-                margin-top: 60px;
-                overflow-y: auto;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 0 20px #6E33B1;
-            }
+h1, p {
+            text-align: center;
+            margin: 5px 0;
+        }
 
-            .message {
-                padding: 10px 15px;
-                margin: 10px 0;
-                border-radius: 12px;
-                max-width: 80%;
-                word-wrap: break-word;
-            }
+        .btn {
+            width: 200px;
+            padding: 12px;
+            margin: 10px;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background: #6E33B1;
+            color: #fff;
+            box-shadow: 0 0 10px #6E33B1;
+        }
+        .btn:hover {
+            background: #8f45f4;
+        }
 
-            .user {
-                background: #38E6A2;
-                align-self: flex-end;
-                text-align: right;
-                color: #0E0307;
-            }
+        #chat-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            height: 100vh;
+        }
 
-            .bot {
-                background: #6E33B1;
-                align-self: flex-start;
-                text-align: left;
-                color: #EEEBF3;
-            }
+        #chat-box {
+            width: 90%;
+            max-width: 400px;
+            height: 60vh;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 15px;
+            margin-top: 20px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px #6E33B1;
+        }
 
-            .chat-input {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin-top: 20px;
-                width: 90%;
-                max-width: 400px;
-            }
+        .message {
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 12px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
 
-            .chat-input input {
-                flex: 1;
-                padding: 12px;
-                border-radius: 30px;
-                border: none;
-                outline: none;
-                background: #C0B4E3;
-                color: #0E0307;
-                font-size: 16px;
-            }
+        .user {
+            background: #38E6A2;
+            align-self: flex-end;
+            text-align: right;
+            color: #0E0307;
+        }
 
-            .chat-input button {
-                background: #6E33B1;
-                color: #fff;
-                border: none;
-                border-radius: 30px;
-                padding: 10px 15px;
-                cursor: pointer;
-            }
+        .bot {
+            background: #6E33B1;
+            align-self: flex-start;
+            text-align: left;
+            color: #EEEBF3;
+        }
 
-            .chat-input button:hover {
-                background: #8f45f4;
-            }
+        .chat-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            width: 90%;
+            max-width: 400px;
+        }
 
-            .glow {
-                text-shadow: 0 0 5px #fff, 0 0 10px #6E33B1, 0 0 15px #6E33B1;
-            }
-        </style>
-    </head>
-    <body>
-        <h1 class=\"glow\">Sanji AI</h1>
-        <div id=\"chat-container\"></div>
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 30px;
+            border: none;
+            outline: none;
+            background: #C0B4E3;
+            color: #0E0307;
+            font-size: 16px;
+        }
 
+        .chat-input button {
+            background: #6E33B1;
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id=\"auth-screen\">
+        <h1 class=\"glow\">Elevate your thinking</h1>
+        <p>Discover endless ways our AI can enhance your business thinking</p>
+        <button class=\"btn\" onclick=\"signup()\">Create Account</button>
+        <button class=\"btn\" onclick=\"login()\">Sign In</button>
+    </div>
+
+    <div id=\"chat-container\">
+        <div id=\"chat-box\"></div>
         <div class=\"chat-input\">
             <input type=\"text\" id=\"user-input\" placeholder=\"Type a message...\">
             <button onclick=\"sendMessage()\">Send</button>
             <button onclick=\"startVoiceInput()\">🎤</button>
         </div>
+    </div>
 
-        <script>
-            function sendMessage() {
-                const input = document.getElementById("user-input");
-                const message = input.value.trim();
-                if (!message) return;
+    <script>
+        const SUPABASE_URL = "https://gtrevmcnfqwntmwedefa.supabase.co";
+        const SUPABASE_ANON_KEY ="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0cmV2bWNuZnF3bnRtd2VkZWZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgwMjEwMzIsImV4cCI6MjA2MzU5NzAzMn0.oxjIzOAR4__VgaJJajVx139vJSuWmySoIZG6nMgO15A ";
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-                const chat = document.getElementById("chat-container");
-                chat.innerHTML += `<div class='message user'>${message}</div>`;
+        async function signup() {
+            const email = prompt("Enter your email");
+            const password = prompt("Create a password");
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (error) alert(error.message);
+            else alert("Check your email to confirm account");
+        }
 
-                fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    chat.innerHTML += `<div class='message bot'>${data.response}</div>`;
-                    if (!data.response.includes("<iframe")) {
-                        fetch('/speak', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ text: data.response })
-                        })
-                        .then(res => res.blob())
-                        .then(blob => {
-                            const audio = new Audio(URL.createObjectURL(blob));
-                            audio.play();
-                        });
-                    }
-                });
-
-                input.value = "";
+        async function login() {
+            const email = prompt("Email");
+            const password = prompt("Password");
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) alert(error.message);
+            else {
+                document.getElementById("auth-screen").style.display = "none";
+                document.getElementById("chat-container").style.display = "flex";
             }
+        }
 
-            function startVoiceInput() {
-                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognition.lang = "en-US";
-                recognition.onresult = e => {
-                    document.getElementById("user-input").value = e.results[0][0].transcript;
-                };
-                recognition.start();
-            }
-        </script>
-    </body>
-    </html>
-    """
-    return render_template_string(html_content)
+        function sendMessage() {
+            const input = document.getElementById("user-input");
+            const message = input.value.trim();
+            if (!message) return;
 
-if __name__ == "__main__":
-    app.run(debug=True)
+            const chat = document.getElementById("chat-box");
+            chat.innerHTML += `<div class='message user'>${message}</div>`;
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message })
+            })
+            .then(res => res.json())
+            .then(data => {
+                chat.innerHTML += `<div class='message bot'>${data.response}</div>`;
+                if (!data.response.includes("<iframe")) {
+                    fetch('/speak', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: data.response })
+                    })
+                    .then(res => res.blob())
+                    .then(blob => {
+                        const audio = new Audio(URL.createObjectURL(blob));
+                        audio.play();
+                    });
+                }
+            });
+            input.value = "";
+        }
+
+        function startVoiceInput() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "en-US";
+            recognition.onresult = e => {
+                document.getElementById("user-input").value = e.results[0][0].transcript;
+            };
+            recognition.start();
+        }
+    </script>
+</body>
+</html>
+"""
+return render_template_string(html_content)
+
+if name == "main": app.run(debug=True)
+
+
