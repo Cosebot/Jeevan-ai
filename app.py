@@ -1,14 +1,14 @@
-from flask import Flask, request, jsonify, send_file, render_template_string
+from flask import Flask,request, jsonify, send_file, render_template_string
 from gtts import gTTS
-import os
-import random
+import os 
+import random 
 import threading
-import time
+import time 
 import speech_recognition as sr
 import wikipedia
 import re
 from googleapiclient.discovery import build
-from difflib import get_close_matches
+from difflib import get_close_matches  # for fuzzy matching
 
 app = Flask(__name__)
 #Refined Chatbot Responses
