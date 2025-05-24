@@ -232,7 +232,7 @@ def serve_frontend():
     <body>
         <div id="auth-screen">
             <h1 class="glow">Elevate your thinking</h1>
-            <p>Discover endless ways our AI can enhance your business thinking</p>
+            <p>Discover endless ways our AI can enhance your happiness,thinking and a companionship</p>
             <button class="btn" onclick="enterChat()">Enter Sanji AI</button>
         </div>
         <div id="chat-container">
