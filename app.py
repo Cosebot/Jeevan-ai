@@ -130,12 +130,17 @@ def chat():
     data = request.get_json()
     message = data.get("message", "").lower().strip()
 
-    intent = detect_query_type(message)
-    if intent in ["who", "what", "where"]:
-        topic = extract_topic(message)
-        response_text = search_wikipedia(topic)
+    # If the message starts with play/show me/turn on, search YouTube
+    if message.startswith("play ") or message.startswith("show me ") or message.startswith("turn on "):
+        topic = message.split(" ", 1)[1]
+        response_text = search_youtube_video(topic)
     else:
-        response_text = get_chatbot_response(message)
+        intent = detect_query_type(message)
+        if intent in ["who", "what", "where"]:
+            topic = extract_topic(message)
+            response_text = search_wikipedia(topic)
+        else:
+            response_text = get_chatbot_response(message)
 
     return jsonify({"response": response_text})
 
