@@ -125,6 +125,20 @@ def search_youtube_video(query):
     except Exception as e:
         return f"Error searching video: {str(e)}"
 
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json()
+    message = data.get("message", "").lower().strip()
+
+    intent = detect_query_type(message)
+    if intent in ["who", "what", "where"]:
+        topic = extract_topic(message)
+        response_text = search_wikipedia(topic)
+    else:
+        response_text = get_chatbot_response(message)
+
+    return jsonify({"response": response_text})
+
 @app.route("/")
 def serve_frontend():
     html_content = """
