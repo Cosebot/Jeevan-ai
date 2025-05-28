@@ -63,28 +63,20 @@ def signup():
         email = request.form["email"]
         password = request.form["password"]
         result = supabase.auth.sign_up({"email": email, "password": password})
+
+        # ✅ Safely check if there’s an error
         if result.model_dump().get("error"):
             return render_template_string(signup_html, error="Signup failed.")
+
+        # ✅ Only set session if returned (when email confirmation is OFF)
         if result.session:
             session["token"] = result.session.access_token
             return redirect("/chat")
-        return redirect("/login")
+
+        # ✅ User created, but needs to verify email
+        return render_template_string(login_html, error="Check your email to confirm your account.")
+    
     return render_template_string(signup_html)
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
-
-@app.route("/chat", methods=["GET", "POST"])
-def chat():
-    if "token" not in session:
-        return redirect("/login")
-    if request.method == "POST":
-        msg = request.get_json().get("message", "")
-        reply = search_wikipedia(msg) if any(x in msg.lower() for x in ["who", "what", "where"]) else get_response(msg)
-        return jsonify({"response": reply})
-    return render_template_string(chat_html)
 
 @app.route("/speak", methods=["POST"])
 def speak():
