@@ -8,10 +8,11 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback")
 
 # Supabase
-SUPABASE_URL = " https://tzhueaiunentawqukyaq.supabase.co"
-SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6aHVlYWl1bmVudGF3cXVreWFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg0MDE2NDAsImV4cCI6MjA2Mzk3NzY0MH0.SM9a_BalFnuyF-lYYYlQaNzx73T8AN5YjxGhkrtCrkU
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Supabase config
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # Responses
 english_responses = {
     "hello": ["Hey there!", "Hi!", "Hello!"],
