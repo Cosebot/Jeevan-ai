@@ -148,49 +148,11 @@ signup_html = """
 chat_html = """
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Sanji AI Chat</title>
-    <style>
-        body { background: #0a0116; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; }
-        #chat-box { background: #1b0b2e; width: 90%; max-width: 400px; flex-grow: 1; margin-top: 10px; padding: 10px; border-radius: 10px; overflow-y: auto; }
-        .message { padding: 10px; margin: 5px; border-radius: 10px; max-width: 80%; }
-        .user { background: #48ffb7; color: #000; align-self: flex-end; }
-        .bot { background: #6E33B1; color: #fff; align-self: flex-start; }
-        #input { width: 70%; padding: 12px; border-radius: 30px; border: none; margin-right: 5px; }
-        #send-btn { padding: 12px 15px; border-radius: 30px; border: none; background: #8a2be2; color: #fff; }
-        .input-bar { display: flex; margin: 10px 0; width: 90%; max-width: 400px; }
-    </style>
-</head>
-<body>
-    <h2>Sanji AI</h2>
-    <div id="chat-box"></div>
-    <div class="input-bar">
-        <input id="input" placeholder="Type something..." />
-        <button id="send-btn" onclick="send()">Send</button>
-    </div>
-    <button onclick="window.location='/logout'">Logout</button>
-
-    <script>
-        function send() {
-            const input = document.getElementById("input");
-            const text = input.value.trim();
-            if (!text) return;
-            const chat = document.getElementById("chat-box");
-            chat.innerHTML += `<div class='message user'>${text}</div>`;
-            fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: text })
-            })
-            .then(res => res.json())
-            .then(data => {
-                chat.innerHTML += `<div class='message bot'>${data.response}</div>`;
-                input.value = "";
-                chat.scrollTop = chat.scrollHeight;
-            });
-        }
-    </script>
-</body>
+  <body style="background:#111;color:white;font-family:sans-serif;text-align:center;padding-top:40vh;">
+    <h1>✅ Chat route is working</h1>
+    <p>If you see this, Flask is rendering the page correctly.</p>
+    <a href='/logout' style='color:#48ffb7;'>Logout</a>
+  </body>
 </html>
 """
 
