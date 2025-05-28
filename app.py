@@ -51,7 +51,7 @@ def login():
         email = request.form["email"]
         password = request.form["password"]
         result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        if result.error:
+        if result.model_dump().get("error"):
             return render_template_string(login_html, error="Login failed.")
         session["token"] = result.session.access_token
         return redirect("/chat")
@@ -63,15 +63,12 @@ def signup():
         email = request.form["email"]
         password = request.form["password"]
         result = supabase.auth.sign_up({"email": email, "password": password})
-        if result.error:
+        if result.model_dump().get("error"):
             return render_template_string(signup_html, error="Signup failed.")
-        
-        # Safely handle session (in case it's None)
         if result.session:
             session["token"] = result.session.access_token
             return redirect("/chat")
-        else:
-            return redirect("/login")  # Fallback for email-confirm flows
+        return redirect("/login")
     return render_template_string(signup_html)
 
 @app.route("/logout")
