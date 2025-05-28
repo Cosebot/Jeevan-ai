@@ -204,6 +204,18 @@ chat_html = """
 </body>
 </html>
 """
+@app.route("/chat", methods=["GET", "POST"])
+def chat():
+    if "token" not in session:
+        return redirect("/login")
+    if request.method == "POST":
+        msg = request.get_json().get("message", "")
+        if any(x in msg.lower() for x in ["who", "what", "where"]):
+            response = search_wikipedia(msg)
+        else:
+            response = get_response(msg)
+        return jsonify({"response": response})
+    return render_template_string(chat_html)
 
 if __name__ == "__main__":
     app.run(debug=True)
