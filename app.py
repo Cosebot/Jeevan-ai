@@ -64,7 +64,13 @@ def signup():
         result = supabase.auth.sign_up({"email": email, "password": password})
         if result.error:
             return render_template_string(signup_html, error="Signup failed.")
-        return redirect("/login")
+        
+        # Safely handle session (in case it's None)
+        if result.session:
+            session["token"] = result.session.access_token
+            return redirect("/chat")
+        else:
+            return redirect("/login")  # Fallback for email-confirm flows
     return render_template_string(signup_html)
 
 @app.route("/logout")
