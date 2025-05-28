@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file, render_template_string
+from flask import Flask, request, jsonify, send_file, render_template_string, render_template, redirect, session
 from gtts import gTTS
 import os 
 import random 
@@ -8,8 +8,14 @@ import speech_recognition as sr
 import wikipedia
 import re
 from googleapiclient.discovery import build
+from supabase import create_client
 
 app = Flask(__name__)
+
+# Supabase config
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 english_responses = {
     "hello": ["Hello there! How can I assist you today?", "Hi! Need anything?", "Hey! I'm here to help.", "Yo! What brings you here?"],
@@ -91,18 +97,6 @@ def search_wikipedia(query, sentences=2):
     except Exception as e:
         return f"Error: {str(e)}"
 
-@app.route("/speak", methods=["POST"])
-def speak():
-    data = request.get_json()
-    text = data.get("text", "")
-    if not text:
-        return jsonify({"error": "No text provided"}), 400
-    tts = gTTS(text=text, lang="en")
-    filename = "temp.mp3"
-    tts.save(filename)
-    threading.Thread(target=cleanup_audio, args=(filename,)).start()
-    return send_file(filename, mimetype="audio/mpeg")
-
 def cleanup_audio(*files):
     time.sleep(10)
     for file in files:
@@ -125,12 +119,23 @@ def search_youtube_video(query):
     except Exception as e:
         return f"Error searching video: {str(e)}"
 
+@app.route("/speak", methods=["POST"])
+def speak():
+    data = request.get_json()
+    text = data.get("text", "")
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    tts = gTTS(text=text, lang="en")
+    filename = "temp.mp3"
+    tts.save(filename)
+    threading.Thread(target=cleanup_audio, args=(filename,)).start()
+    return send_file(filename, mimetype="audio/mpeg")
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json()
     message = data.get("message", "").lower().strip()
 
-    # If the message starts with play/show me/turn on, search YouTube
     if message.startswith("play ") or message.startswith("show me ") or message.startswith("turn on "):
         topic = message.split(" ", 1)[1]
         response_text = search_youtube_video(topic)
@@ -144,200 +149,34 @@ def chat():
 
     return jsonify({"response": response_text})
 
+@app.route("/auth")
+def auth_page():
+    return render_template("auth.html")
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    email = request.form["email"]
+    password = request.form["password"]
+    name = request.form["name"]
+    result = supabase.auth.sign_up({"email": email, "password": password})
+    if result.get("error"):
+        return f"Signup Error: {result['error']['message']}"
+    return redirect("/")
+
+@app.route("/login", methods=["POST"])
+def login():
+    email = request.form["email"]
+    password = request.form["password"]
+    result = supabase.auth.sign_in_with_password({"email": email, "password": password})
+    if result.get("error"):
+        return f"Login Error: {result['error']['message']}"
+    session["token"] = result["session"]["access_token"]
+    return redirect("/")
+
 @app.route("/")
 def serve_frontend():
-    html_content = """
-    <!DOCTYPE html>
-    <html lang='en'>
-    <head>
-        <meta charset='UTF-8'>
-        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-        <title>Sanji AI</title>
-        <style>
-            body {
-                margin: 0;
-                font-family: 'SF Pro Display', sans-serif;
-                background: radial-gradient(circle at top, #0E0307 0%, #1b0b2e 100%);
-                color: #EEEBF3;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-                overflow: hidden;
-            }
-            .btn {
-                width: 200px;
-                padding: 12px;
-                margin: 10px;
-                border-radius: 30px;
-                font-size: 16px;
-                cursor: pointer;
-                border: none;
-                background: #6E33B1;
-                color: #fff;
-                box-shadow: 0 0 10px #6E33B1;
-            }
-            .btn:hover {
-                background: #8f45f4;
-            }
-            #chat-container {
-                display: none;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
-                width: 100%;
-                height: 100vh;
-            }
-            #chat-box {
-                width: 90%;
-                max-width: 400px;
-                height: 60vh;
-                background: rgba(255,255,255,0.05);
-                border-radius: 20px;
-                padding: 15px;
-                margin-top: 20px;
-                overflow-y: auto;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 0 20px #6E33B1;
-            }
-            .message {
-                padding: 10px 15px;
-                margin: 10px 0;
-                border-radius: 12px;
-                max-width: 80%;
-                word-wrap: break-word;
-            }
-            .user {
-                background: #38E6A2;
-                align-self: flex-end;
-                text-align: right;
-                color: #0E0307;
-            }
-            .bot {
-                background: #6E33B1;
-                align-self: flex-start;
-                text-align: left;
-                color: #EEEBF3;
-            }
-            .chat-input {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin: 20px 0;
-                width: 90%;
-                max-width: 400px;
-            }
-            .chat-input input {
-                flex: 1;
-                padding: 12px;
-                border-radius: 30px;
-                border: none;
-                outline: none;
-                background: #C0B4E3;
-                color: #0E0307;
-                font-size: 16px;
-            }
-            .chat-input button {
-                background: #6E33B1;
-                color: #fff;
-                border: none;
-                border-radius: 30px;
-                padding: 10px 15px;
-                cursor: pointer;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="auth-screen">
-            <h1 class="glow">Elevate your thinking</h1>
-            <p>Discover endless ways our AI can enhance your happiness,thinking and a companionship</p>
-            <button class="btn" onclick="enterChat()">Enter Sanji AI</button>
-        </div>
-        <div id="chat-container">
-            <div id="chat-box"></div>
-            <div class="chat-input">
-                <input type="text" id="user-input" placeholder="Type a message...">
-                <button onclick="sendMessage()">Send</button>
-                <button onclick="startVoiceInput()">🎤</button>
-            </div>
-        </div>
-        <script>
-            function enterChat() {
-                document.getElementById("auth-screen").style.display = "none";
-                document.getElementById("chat-container").style.display = "flex";
-
-                const message = "Welcome to Sanji AI";
-                const chat = document.getElementById("chat-box");
-                const bubble = document.createElement("div");
-                bubble.className = "message bot";
-                bubble.innerHTML = "";
-                chat.appendChild(bubble);
-
-                let i = 0;
-                const typing = setInterval(() => {
-                    if (i < message.length) {
-                        bubble.innerHTML += message.charAt(i);
-                        i++;
-                    } else {
-                        clearInterval(typing);
-                        fetch('/speak', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ text: message })
-                        })
-                        .then(res => res.blob())
-                        .then(blob => {
-                            const audio = new Audio(URL.createObjectURL(blob));
-                            audio.play();
-                        });
-                    }
-                }, 50);
-            }
-
-            function sendMessage() {
-                const input = document.getElementById("user-input");
-                const message = input.value.trim();
-                if (!message) return;
-                const chat = document.getElementById("chat-box");
-                chat.innerHTML += `<div class='message user'>${message}</div>`;
-                fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    chat.innerHTML += `<div class='message bot'>${data.response}</div>`;
-                    if (!data.response.includes("<iframe")) {
-                        fetch('/speak', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ text: data.response })
-                        })
-                        .then(res => res.blob())
-                        .then(blob => {
-                            const audio = new Audio(URL.createObjectURL(blob));
-                            audio.play();
-                        });
-                    }
-                });
-                input.value = "";
-            }
-
-            function startVoiceInput() {
-                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognition.lang = "en-US";
-                recognition.onresult = e => {
-                    document.getElementById("user-input").value = e.results[0][0].transcript;
-                };
-                recognition.start();
-            }
-        </script>
-    </body>
-    </html>
-    """
-    return render_template_string(html_content)
+    with open("SanjiAIsourcecode.txt", "r") as f:
+        return render_template_string(f.read())
 
 if __name__ == "__main__":
     app.run(debug=True)
