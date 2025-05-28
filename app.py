@@ -144,15 +144,61 @@ signup_html = """
 </body>
 </html>
 """
-
 chat_html = """
 <!DOCTYPE html>
 <html>
-  <body style="background:#111;color:white;font-family:sans-serif;text-align:center;padding-top:40vh;">
-    <h1>✅ Chat route is working</h1>
-    <p>If you see this, Flask is rendering the page correctly.</p>
-    <a href='/logout' style='color:#48ffb7;'>Logout</a>
-  </body>
+<head>
+  <title>Sanji AI Chat</title>
+  <style>
+    body { background: #0a0116; color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+    #chat-box { flex: 1; width: 90%; max-width: 400px; margin-top: 10px; background: #1b0b2e; border-radius: 10px; padding: 10px; overflow-y: auto; }
+    .message { margin: 8px 0; padding: 10px; border-radius: 10px; }
+    .user { background: #48ffb7; color: black; text-align: right; }
+    .bot { background: #6E33B1; color: white; text-align: left; }
+    .input-bar { display: flex; width: 90%; max-width: 400px; margin-bottom: 10px; }
+    input { flex: 1; padding: 12px; border-radius: 30px; border: none; }
+    button { margin-left: 5px; padding: 12px; border-radius: 30px; background: #8a2be2; color: white; border: none; }
+  </style>
+</head>
+<body>
+  <h2>Sanji AI</h2>
+  <div id="chat-box"></div>
+  <div class="input-bar">
+    <input id="input" placeholder="Type something..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+  <button onclick="window.location='/logout'">Logout</button>
+
+  <script>
+    function sendMessage() {
+      const input = document.getElementById("input");
+      const text = input.value.trim();
+      if (!text) return;
+      const chat = document.getElementById("chat-box");
+      chat.innerHTML += `<div class='message user'>${text}</div>`;
+      fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
+      })
+      .then(res => res.json())
+      .then(data => {
+        const botDiv = document.createElement("div");
+        botDiv.className = "message bot";
+        if (data.response.includes("<iframe")) {
+          botDiv.innerHTML = data.response;
+          botDiv.style.background = "transparent";
+          botDiv.style.padding = "0";
+        } else {
+          botDiv.textContent = data.response;
+        }
+        chat.appendChild(botDiv);
+        input.value = "";
+        chat.scrollTop = chat.scrollHeight;
+      });
+    }
+  </script>
+</body>
 </html>
 """
 
