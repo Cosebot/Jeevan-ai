@@ -50,11 +50,14 @@ def login():
     if request.method == "POST":
         email = request.form["email"]
         password = request.form["password"]
-        result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-        if result.model_dump().get("error"):
-            return render_template_string(login_html, error="Login failed.")
-        session["token"] = result.session.access_token
-        return redirect("/chat")
+        try:
+            result = supabase.auth.sign_in_with_password({"email": email, "password": password})
+            if result.session:
+                session["token"] = result.session.access_token
+                return redirect("https://sanji-ai.onrender.com/chat")
+            return render_template_string(login_html, error="Login failed. Please try again.")
+        except Exception as e:
+            return render_template_string(login_html, error="Invalid email or password.")
     return render_template_string(login_html)
 
 @app.route("/signup", methods=["GET", "POST"])
@@ -71,7 +74,7 @@ def signup():
         # ✅ Only set session if returned (when email confirmation is OFF)
         if result.session:
             session["token"] = result.session.access_token
-            return redirect("/chat")
+            return redirect("https://sanji-ai.onrender.com/chat")
 
         # ✅ User created, but needs to verify email
         return render_template_string(login_html, error="Check your email to confirm your account.")
