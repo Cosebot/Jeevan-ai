@@ -2,11 +2,11 @@ from flask import Flask, request, jsonify, redirect, session, render_template_st
 
 app = Flask(name) app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default") app.permanent_session_lifetime = 365 * 24 * 60 * 60
 
-Supabase
+#Supabase
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL") SUPABASE_KEY = os.environ.get("SUPABASE_KEY") supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-Response logic
+#Response logic
 
 english_responses = { "hello": ["Hey there!", "Hi!", "Hello!"], "how are you": ["Doing well, thanks!", "I'm great! How about you?"], "bye": ["Goodbye!", "See you soon!"] }
 
@@ -30,8 +30,7 @@ def search_wikipedia(query, sentences=2): try: return wikipedia.summary(query, s
 
 @app.route("/speak", methods=["POST"]) def speak(): text = request.get_json().get("text", "") if not text: return jsonify({"error": "No text provided"}), 400 tts = gTTS(text=text, lang="en") filename = "temp.mp3" tts.save(filename) threading.Thread(target=cleanup_audio, args=(filename,)).start() return send_file(filename, mimetype="audio/mpeg")
 
------------------ HTML Templates ------------------
-
+#HTML Templates
 login_html = """
 
 <!DOCTYPE html><html><head><title>Login</title><style>body { background: #0a0116; color: #fff; font-family: sans-serif; margin: 0; height: 100vh; display: flex; align-items: center; justify-content: center; } form { width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; } input, button { padding: 15px; border-radius: 10px; border: none; font-size: 16px; } button { background: #6E33B1; color: #fff; } a { color: #48ffb7; text-align: center; font-size: 14px; } </style></head><body>
@@ -106,5 +105,6 @@ function send() {
   });
 }
 </script></body></html>
-"""if name == "main": app.run(debug=True)
+"""
+if name == "main": app.run(debug=True)
 
