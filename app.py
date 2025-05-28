@@ -1,18 +1,18 @@
 from flask import Flask, request, jsonify, redirect, session, render_template_string, send_file
 from gtts import gTTS
-import os, random, threading, time, re, wikipedia
+import os, random, threading, time, wikipedia
 from googleapiclient.discovery import build
 from supabase import create_client
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default-fallback")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "fallback")
 
-# Supabase client
+# Supabase
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Simple chatbot logic
+# Responses
 english_responses = {
     "hello": ["Hey there!", "Hi!", "Hello!"],
     "how are you": ["Doing well, thanks!", "I'm great! How about you?"],
@@ -38,58 +38,53 @@ def search_wikipedia(query, sentences=2):
     except:
         return "Sorry, I couldn't find anything."
 
-# ROUTES
-
 @app.route("/")
-def index():
+def home():
     if "token" in session:
         return redirect("/chat")
-    return render_template_string(landing_page_html)
+    return redirect("/login")
 
-@app.route("/login", methods=["POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    email = request.form.get("email")
-    password = request.form.get("password")
-    result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-   if result.error:
-        return render_template_string(landing_page_html, error="Login failed.")
-    session["token"] = result["session"]["access_token"]
-    return redirect("/chat")
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+        result = supabase.auth.sign_in_with_password({"email": email, "password": password})
+        if result.error:
+            return render_template_string(login_html, error="Login failed.")
+        session["token"] = result.session.access_token
+        return redirect("/chat")
+    return render_template_string(login_html)
 
-@app.route("/signup", methods=["POST"])
+@app.route("/signup", methods=["GET", "POST"])
 def signup():
-    email = request.form.get("email")
-    password = request.form.get("password")
-    result = supabase.auth.sign_up({"email": email, "password": password})
-    if result.error:
-        return render_template_string(landing_page_html, error="Signup failed.")
-    return redirect("/")
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+        result = supabase.auth.sign_up({"email": email, "password": password})
+        if result.error:
+            return render_template_string(signup_html, error="Signup failed.")
+        return redirect("/login")
+    return render_template_string(signup_html)
 
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect("/")
+    return redirect("/login")
 
-@app.route("/chat")
-def chat_page():
-    if "token" not in session:
-        return redirect("/")
-    return render_template_string(chat_page_html)
-
-@app.route("/chat", methods=["POST"])
+@app.route("/chat", methods=["GET", "POST"])
 def chat():
-    data = request.get_json()
-    msg = data.get("message", "")
-    if any(x in msg.lower() for x in ["who", "what", "where"]):
-        reply = search_wikipedia(msg)
-    else:
-        reply = get_response(msg)
-    return jsonify({"response": reply})
+    if "token" not in session:
+        return redirect("/login")
+    if request.method == "POST":
+        msg = request.get_json().get("message", "")
+        reply = search_wikipedia(msg) if any(x in msg.lower() for x in ["who", "what", "where"]) else get_response(msg)
+        return jsonify({"response": reply})
+    return render_template_string(chat_html)
 
 @app.route("/speak", methods=["POST"])
 def speak():
-    data = request.get_json()
-    text = data.get("text", "")
+    text = request.get_json().get("text", "")
     if not text:
         return jsonify({"error": "No text provided"}), 400
     tts = gTTS(text=text, lang="en")
@@ -98,123 +93,105 @@ def speak():
     threading.Thread(target=cleanup_audio, args=(filename,)).start()
     return send_file(filename, mimetype="audio/mpeg")
 
+# HTML templates (mobile-optimized)
 
-# === HTML Embedded Below ===
-
-landing_page_html = """
+login_html = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sanji AI</title>
+    <title>Login - Sanji AI</title>
     <style>
-        body {
-            background: #100018;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding-top: 10vh;
-        }
-        .form {
-            margin-top: 2rem;
-        }
-        input, button {
-            padding: 10px;
-            margin: 5px;
-            border-radius: 5px;
-            border: none;
-        }
-        .section {
-            margin-top: 20px;
-        }
+        body { background: #0a0116; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        input, button { width: 80%; max-width: 300px; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; }
+        button { background: #6E33B1; color: #fff; }
+        a { color: #48ffb7; text-decoration: none; }
+        .container { text-align: center; width: 100%; }
     </style>
 </head>
 <body>
-    <h1>Elevate your thinking</h1>
-    <p>Discover endless ways our AI can enhance your happiness, thinking, and companionship</p>
-
-    <div class="form">
-        <h2>Login</h2>
-        <form action="/login" method="post">
-            <input name="email" placeholder="Email" required><br>
+    <div class="container">
+        <h2>Login to Sanji AI</h2>
+        <form method="POST">
+            <input name="email" type="email" placeholder="Email" required><br>
             <input name="password" type="password" placeholder="Password" required><br>
             <button type="submit">Login</button>
         </form>
-
-        <div class="section">
-            <h2>or Sign Up</h2>
-            <form action="/signup" method="post">
-                <input name="email" placeholder="Email" required><br>
-                <input name="password" type="password" placeholder="Password" required><br>
-                <button type="submit">Sign Up</button>
-            </form>
-        </div>
+        <p>New user? <a href="/signup">Create an account</a></p>
     </div>
 </body>
 </html>
 """
 
-chat_page_html = """
+signup_html = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up - Sanji AI</title>
+    <style>
+        body { background: #0a0116; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        input, button { width: 80%; max-width: 300px; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; font-size: 16px; }
+        button { background: #6E33B1; color: #fff; }
+        a { color: #48ffb7; text-decoration: none; }
+        .container { text-align: center; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Create a Sanji AI Account</h2>
+        <form method="POST">
+            <input name="email" type="email" placeholder="Email" required><br>
+            <input name="password" type="password" placeholder="Password" required><br>
+            <button type="submit">Sign Up</button>
+        </form>
+        <p>Already have an account? <a href="/login">Log in</a></p>
+    </div>
+</body>
+</html>
+"""
+
+chat_html = """
 <!DOCTYPE html>
 <html>
 <head>
     <title>Sanji AI Chat</title>
     <style>
-        body {
-            background: #180030;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            padding: 10px;
-        }
-        #chat-box {
-            background: #2a005f;
-            border-radius: 10px;
-            padding: 10px;
-            height: 400px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-        }
-        .message {
-            margin: 5px 0;
-            padding: 8px;
-            border-radius: 6px;
-        }
-        .user { background: #48ffb7; color: #000; text-align: right; }
-        .bot { background: #8b2af7; color: #fff; text-align: left; }
-        input {
-            padding: 10px;
-            width: 80%;
-        }
-        button {
-            padding: 10px;
-        }
+        body { background: #0a0116; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+        #chat-box { background: #1b0b2e; width: 90%; max-width: 400px; flex-grow: 1; margin-top: 10px; padding: 10px; border-radius: 10px; overflow-y: auto; }
+        .message { padding: 10px; margin: 5px; border-radius: 10px; max-width: 80%; }
+        .user { background: #48ffb7; color: #000; align-self: flex-end; }
+        .bot { background: #6E33B1; color: #fff; align-self: flex-start; }
+        #input { width: 70%; padding: 12px; border-radius: 30px; border: none; margin-right: 5px; }
+        #send-btn { padding: 12px 15px; border-radius: 30px; border: none; background: #8a2be2; color: #fff; }
+        .input-bar { display: flex; margin: 10px 0; width: 90%; max-width: 400px; }
     </style>
 </head>
 <body>
-    <h2>Welcome to Sanji AI</h2>
+    <h2>Sanji AI</h2>
     <div id="chat-box"></div>
-    <input type="text" id="input" placeholder="Say something..." />
-    <button onclick="send()">Send</button>
-    <button onclick="logout()">Logout</button>
+    <div class="input-bar">
+        <input id="input" placeholder="Type something..." />
+        <button id="send-btn" onclick="send()">Send</button>
+    </div>
+    <button onclick="window.location='/logout'">Logout</button>
 
     <script>
         function send() {
             const input = document.getElementById("input");
-            const message = input.value.trim();
-            if (!message) return;
-            document.getElementById("chat-box").innerHTML += `<div class='message user'>${message}</div>`;
-            fetch('/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message })
+            const text = input.value.trim();
+            if (!text) return;
+            const chat = document.getElementById("chat-box");
+            chat.innerHTML += `<div class='message user'>${text}</div>`;
+            fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text })
             })
             .then(res => res.json())
             .then(data => {
-                document.getElementById("chat-box").innerHTML += `<div class='message bot'>${data.response}</div>`;
+                chat.innerHTML += `<div class='message bot'>${data.response}</div>`;
                 input.value = "";
+                chat.scrollTop = chat.scrollHeight;
             });
-        }
-        function logout() {
-            window.location.href = "/logout";
         }
     </script>
 </body>
