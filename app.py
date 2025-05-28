@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, redirect, session, render_template_string
+from flask import Flask, request, jsonify, redirect, session, render_template_string, send_file
 from gtts import gTTS
 import os, random, threading, time, re, wikipedia
 from googleapiclient.discovery import build
@@ -51,7 +51,7 @@ def login():
     email = request.form.get("email")
     password = request.form.get("password")
     result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-    if result.get("error"):
+   if result.error:
         return render_template_string(landing_page_html, error="Login failed.")
     session["token"] = result["session"]["access_token"]
     return redirect("/chat")
@@ -61,7 +61,7 @@ def signup():
     email = request.form.get("email")
     password = request.form.get("password")
     result = supabase.auth.sign_up({"email": email, "password": password})
-    if result.get("error"):
+    if result.error:
         return render_template_string(landing_page_html, error="Signup failed.")
     return redirect("/")
 
