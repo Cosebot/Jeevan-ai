@@ -11,8 +11,10 @@ import re
 from googleapiclient.discovery import build
 
 # ----- Supabase Auth Init -----
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+SUPABASE_URL = 
+os.environ.get("SUPABASE_URL")
+SUPABASE_KEY =
+os.environ.get("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 #Response logic
