@@ -11,9 +11,11 @@ import re
 from googleapiclient.discovery import build
 
 # ----- Supabase Auth Init -----
-SUPABASE_URL = os.environ.get("SUPABASE_URL") SUPABASE_KEY = os.environ.get("SUPABASE_KEY") supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-Response logic
+#Response logic
 
 english_responses = { "hello": ["Hey there!", "Hi!", "Hello!"], "how are you": ["Doing well, thanks!", "I'm great! How about you?"], "bye": ["Goodbye!", "See you soon!"] }
 
