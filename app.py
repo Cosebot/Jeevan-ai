@@ -1,12 +1,13 @@
-import os
+import os 
 import random 
 import threading 
 import time 
 import re
 from flask import Flask, request, jsonify, send_file, render_template_string, redirect, session 
 from gtts import gTTS 
-import wikipedia 
+import wikipedia
 from googleapiclient.discovery import build from supabase import create_client
+
 ----- Supabase Auth Init -----
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL") SUPABASE_KEY = os.environ.get("SUPABASE_KEY") supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -43,7 +44,7 @@ def search_youtube_video(query): try: api_key = os.environ.get("YOUTUBE_API_KEY"
 
 @app.route("/speak", methods=["POST"]) def speak(): text = request.get_json().get("text", "") if not text: return jsonify({"error": "No text provided"}), 400 tts = gTTS(text=text, lang="en") filename = "temp.mp3" tts.save(filename) threading.Thread(target=cleanup_audio, args=(filename,)).start() return send_file(filename, mimetype="audio/mpeg")
 
------ HTML Templates (Minimal for now) -----
+----- HTML Templates -----
 
 login_html = """
 
