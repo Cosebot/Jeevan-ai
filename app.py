@@ -750,7 +750,7 @@ function send() {
   });
 }
 </script></body></html>
-"""if name == "main": app.run(debug=True)
+"""
 
 # ----- Run Server -----
 if __name__ == "__main__":
