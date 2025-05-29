@@ -3,9 +3,10 @@ import random
 import threading 
 import time 
 import re
-
-from flask import Flask, request, jsonify, send_file, render_template_string, redirect, session from gtts import gTTS import wikipedia from googleapiclient.discovery import build from supabase import create_client
-
+from flask import Flask, request, jsonify, send_file, render_template_string, redirect, session 
+from gtts import gTTS 
+import wikipedia 
+from googleapiclient.discovery import build from supabase import create_client
 ----- Supabase Auth Init -----
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL") SUPABASE_KEY = os.environ.get("SUPABASE_KEY") supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
