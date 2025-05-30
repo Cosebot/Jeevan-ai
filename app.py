@@ -6,15 +6,17 @@ import re
 from flask import Flask, request, jsonify, send_file, render_template_string, redirect, session 
 from gtts import gTTS 
 import wikipedia
-from googleapiclient.discovery import build from supabase import create_client
+from googleapiclient.discovery import build
+from supabase import create_client
 
 ----- Supabase Auth Init -----
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL") SUPABASE_KEY = os.environ.get("SUPABASE_KEY") supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY") supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 ----- Flask App Init -----
 
-app = Flask(name) app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default") app.permanent_session_lifetime = 365 * 24 * 60 * 60
+app = Flask(__name__) app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default") app.permanent_session_lifetime = 365 * 24 * 60 * 60
 
 ----- Chatbot Responses & Logic -----
 
