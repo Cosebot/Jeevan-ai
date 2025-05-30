@@ -46,9 +46,10 @@ def detect_query_type(text):
         return "chat"
 
 def extract_topic(text):
-    match = re.search(r"(who|what|where) is (.+)", text.lower())
-    if match:
-        return match.group(2)
+    text = text.lower()
+    for keyword in ["play", "show me", "turn on", "video of"]:
+        if keyword in text:
+            return text.split(keyword, 1)[1].strip()
     return text.strip()
 
 def search_wikipedia(query, sentences=2):
@@ -112,9 +113,9 @@ def login():
                 session["name"] = ""
                 session["theme"] = "default"
                 return redirect("/chat")
-            return render_template_string(login_html, error="Login failed.")
+            return render_template_string(login_html)
         except:
-            return render_template_string(login_html, error="Invalid credentials.")
+            return render_template_string(login_html)
     return render_template_string(login_html)
 
 @app.route("/signup", methods=["GET", "POST"])
@@ -124,7 +125,7 @@ def signup():
         password = request.form["password"]
         result = supabase.auth.sign_up({"email": email, "password": password})
         if result.model_dump().get("error"):
-            return render_template_string(signup_html, error="Signup failed.")
+            return render_template_string(signup_html)
         return redirect("/login")
     return render_template_string(signup_html)
 
@@ -138,7 +139,7 @@ def chat_page():
     if "token" not in session:
         return redirect("/login")
     theme = get_theme_gradient(session.get("theme", "default"))
-    return render_template_string(chat_html, email=session.get("email", ""), name=session.get("name", ""), theme_gradient=theme)
+    return render_template_string(chat_html, email=session.get("email", ""), theme_gradient=theme)
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -146,8 +147,8 @@ def chat():
         return jsonify({"error": "Not authenticated"}), 401
     message = request.get_json().get("message", "")
     name = session.get("name", "")
-    if message.startswith("play ") or message.startswith("show me ") or message.startswith("turn on "):
-        topic = message.split(" ", 1)[1]
+    if any(keyword in message.lower() for keyword in ["play", "show me", "turn on", "video of"]):
+        topic = extract_topic(message)
         response = search_youtube_video(topic)
     else:
         intent = detect_query_type(message)
@@ -217,33 +218,7 @@ login_html = """
 </html>
 """
 
-signup_html = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Sign Up</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {background: #1b0b2e; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'SF Pro Display', sans-serif; margin: 0;}
-        .container {background: rgba(255,255,255,0.1); padding: 40px 30px; border-radius: 20px; box-shadow: 0 0 20px #6E33B1; width: 90%; max-width: 400px;}
-        .container input, .container button {width: 100%; margin: 12px 0; padding: 14px; border: none; border-radius: 30px; font-size: 16px; box-sizing: border-box;}
-        .container button {background: #6E33B1; color: #fff; cursor: pointer; transition: background 0.3s ease;}
-        .container button:hover {background: #8f45f4;}
-        .link-button {background: none; color: #8f45f4; border: none; text-decoration: underline; cursor: pointer; display: block; margin: 10px auto 0; font-size: 16px;}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <form method="POST">
-            <input name="email" type="email" placeholder="Email" required>
-            <input name="password" type="password" placeholder="Password" required>
-            <button type="submit">Sign Up</button>
-        </form>
-        <button class="link-button" onclick="window.location.href='/login'">Already a user? Login</button>
-    </div>
-</body>
-</html>
-"""
+signup_html = login_html.replace("Login", "Sign Up").replace("/signup", "/login").replace("New user?", "Already a user?")
 
 chat_html = """
 <!DOCTYPE html>
@@ -335,6 +310,7 @@ settings_html = """
     </style>
 </head>
 <body>
+    <button onclick="window.location.href='/chat'" style="background:none;border:none;color:#8f45f4;font-size:20px;cursor:pointer;">← Back</button>
     <h2>Settings</h2>
     <label for="name">Name:</label>
     <input type="text" id="name" placeholder="Enter your name">
@@ -359,7 +335,7 @@ settings_html = """
         }
         function setTheme(theme) {
             fetch('/settheme', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ theme })})
-            .then(() => {alert("Theme changed!"); window.location.reload();});
+            .then(() => {window.location.reload();});
         }
         function submitFeedback() {
             const feedback = document.getElementById("feedback").value;
@@ -370,5 +346,6 @@ settings_html = """
 </body>
 </html>
 """
+
 if __name__ == "__main__":
     app.run(debug=True)
