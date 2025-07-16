@@ -5,31 +5,7 @@ import time
 import re
 from flask import Flask, request, jsonify, send_file, render_template_string, redirect, session
 from gtts import gTTS
-
-import wikipediaapp.route("/chat")
-def chat_page():
-    if "token" not in session:
-        return redirect("/login")
-    theme = get_theme_gradient(session.get("theme", "default"))
-    return render_template_string(chat_html, email=session.get("email", ""), theme_gradient=theme)
-
-@app.route("/chat", methods=["POST"])
-def chat():
-    if "token" not in session:
-        return jsonify({"error": "Not authenticated"}), 401
-    message = request.get_json().get("message", "")
-    name = session.get("name", "")
-    if any(keyword in message.lower() for keyword in ["play", "show me", "turn on", "video of"]):
-        topic = extract_topic(message)
-        response = search_youtube_video(topic)
-    else:
-        intent = detect_query_type(message)
-        if intent in ["who", "what", "where"]:
-            topic = extract_topic(message)
-            response = search_wikipedia(topic)
-        else:
-            response = get_chatbot_response(message, name)
-    return jsonify({"response": response})
+import wikipedia
 from googleapiclient.discovery import build
 from supabase import create_client
 
