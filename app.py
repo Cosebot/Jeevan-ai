@@ -98,24 +98,31 @@ def get_theme_gradient(theme):
 @app.route("/")
 def index():
     return redirect("/login")
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         email = request.form["email"]
         password = request.form["password"]
         try:
+            print(f"[LOGIN] Attempting login for: {email}")
             result = supabase.auth.sign_in_with_password({"email": email, "password": password})
-            if result.session:
+
+            if result and hasattr(result, "session") and result.session:
                 session.permanent = True
                 session["token"] = result.session.access_token
                 session["email"] = email
                 session["name"] = ""
                 session["theme"] = "default"
+                print("[LOGIN] Success — Redirecting to /chat")
                 return redirect("/chat")
-            return render_template_string(login_html)
-        except:
-            return render_template_string(login_html)
+            else:
+                print("[LOGIN] Failed — Invalid credentials or no session")
+                return render_template_string("<h1>Login Failed</h1><p>Invalid email or password.</p>")
+        
+        except Exception as e:
+            print("[LOGIN ERROR]:", e)
+            return render_template_string(f"<h1>Login Failed</h1><p>{str(e)}</p>")
+    
     return render_template_string(login_html)
 
 @app.route("/signup", methods=["GET", "POST"])
