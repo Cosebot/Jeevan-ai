@@ -5,7 +5,31 @@ import time
 import re
 from flask import Flask, request, jsonify, send_file, render_template_string, redirect, session
 from gtts import gTTS
-import wikipedia
+
+import wikipediaapp.route("/chat")
+def chat_page():
+    if "token" not in session:
+        return redirect("/login")
+    theme = get_theme_gradient(session.get("theme", "default"))
+    return render_template_string(chat_html, email=session.get("email", ""), theme_gradient=theme)
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    if "token" not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    message = request.get_json().get("message", "")
+    name = session.get("name", "")
+    if any(keyword in message.lower() for keyword in ["play", "show me", "turn on", "video of"]):
+        topic = extract_topic(message)
+        response = search_youtube_video(topic)
+    else:
+        intent = detect_query_type(message)
+        if intent in ["who", "what", "where"]:
+            topic = extract_topic(message)
+            response = search_wikipedia(topic)
+        else:
+            response = get_chatbot_response(message, name)
+    return jsonify({"response": response})
 from googleapiclient.discovery import build
 from supabase import create_client
 
@@ -14,7 +38,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# ----- Flask App Init -----
+#app ----- Flask App Init -----
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default")
 app.permanent_session_lifetime = 365 * 24 * 60 * 60  # 1 year
@@ -141,7 +165,7 @@ def logout():
     session.clear()
     return redirect("/login")
 
-@app.route("/chat")
+@app.route("/chat", methods=["GET"])
 def chat_page():
     if "token" not in session:
         return redirect("/login")
@@ -149,7 +173,7 @@ def chat_page():
     return render_template_string(chat_html, email=session.get("email", ""), theme_gradient=theme)
 
 @app.route("/chat", methods=["POST"])
-def chat():
+def chat_post():
     if "token" not in session:
         return jsonify({"error": "Not authenticated"}), 401
     message = request.get_json().get("message", "")
