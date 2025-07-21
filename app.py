@@ -1,11 +1,18 @@
-import os import random import threading import time from flask import Flask, request, jsonify, send_file, render_template_string from gtts import gTTS import wikipedia from googleapiclient.discovery import build
+import os
+import random
+import threading
+import time
+from flask import Flask, request, jsonify, send_file, render_template_string
+from gtts import gTTS
+import wikipedia
+from googleapiclient.discovery import build
 
-app = Flask(name) app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default") app.permanent_session_lifetime = 365 * 24 * 60 * 60
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default")
+app.permanent_session_lifetime = 365 * 24 * 60 * 60
 
-Combined HTML, CSS, JS all in one file for inline rendering
-
+# Combined HTML, CSS, JS all in one file for inline rendering
 chat_html = '''<!DOCTYPE html>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -135,31 +142,112 @@ chat_html = '''<!DOCTYPE html>
     });
   </script>
 </body>
-</html>'''--- Chat Logic ---
+</html>'''
 
-english_responses = { "hello": ["Hello there! How can I assist you today?", "Hi! Need anything?", "Hey! I'm here to help."], "how are you": ["Doing great! How about you?", "All systems go!"], "bye": ["Catch you later!", "Goodbye! Stay awesome!"], }
+# --- Chat Logic ---
+english_responses = {
+    "hello": ["Hello there! How can I assist you today?", "Hi! Need anything?", "Hey! I'm here to help."],
+    "how are you": ["Doing great! How about you?", "All systems go!"],
+    "bye": ["Catch you later!", "Goodbye! Stay awesome!"],
+}
 
-def get_chatbot_response(user_input, name=None): user_input = user_input.lower().strip() for key, responses in english_responses.items(): if key in user_input: response = random.choice(responses) return f"{name}, {response}" if name else response return f"{name}, I didn't understand that." if name else "Sorry, I didn't get that."
+def get_chatbot_response(user_input, name=None):
+    user_input = user_input.lower().strip()
+    for key, responses in english_responses.items():
+        if key in user_input:
+            response = random.choice(responses)
+            return f"{name}, {response}" if name else response
+    return f"{name}, I didn't understand that." if name else "Sorry, I didn't get that."
 
-def detect_query_type(text): text = text.lower().strip() if text.startswith("who is") or "who is" in text: return "who" elif text.startswith("what is") or "what is" in text: return "what" elif text.startswith("where is") or "where is" in text: return "where" else: return "chat"
+def detect_query_type(text):
+    text = text.lower().strip()
+    if text.startswith("who is") or "who is" in text:
+        return "who"
+    elif text.startswith("what is") or "what is" in text:
+        return "what"
+    elif text.startswith("where is") or "where is" in text:
+        return "where"
+    else:
+        return "chat"
 
-def extract_topic(text): text = text.lower() for keyword in ["play", "show me", "turn on", "video of"]: if keyword in text: return text.split(keyword, 1)[1].strip() return text.strip()
+def extract_topic(text):
+    text = text.lower()
+    for keyword in ["play", "show me", "turn on", "video of"]:
+        if keyword in text:
+            return text.split(keyword, 1)[1].strip()
+    return text.strip()
 
-def search_wikipedia(query, sentences=2): try: summary = wikipedia.summary(query, sentences=sentences) return f"According to Wikipedia: {summary}" except wikipedia.DisambiguationError as e: return f"Too many results. Suggestions: {', '.join(e.options[:3])}" except wikipedia.PageError: return "Couldn't find anything." except Exception as e: return f"Error: {str(e)}"
+def search_wikipedia(query, sentences=2):
+    try:
+        summary = wikipedia.summary(query, sentences=sentences)
+        return f"According to Wikipedia: {summary}"
+    except wikipedia.DisambiguationError as e:
+        return f"Too many results. Suggestions: {', '.join(e.options[:3])}"
+    except wikipedia.PageError:
+        return "Couldn't find anything."
+    except Exception as e:
+        return f"Error: {str(e)}"
 
-def search_youtube_video(query): try: api_key = os.environ.get("YOUTUBE_API_KEY") youtube = build("youtube", "v3", developerKey=api_key) request = youtube.search().list(part="snippet", q=query, type="video", maxResults=1) response = request.execute() items = response.get("items") if items: video_id = items[0]["id"]["videoId"] title = items[0]["snippet"]["title"] return f'<iframe width="100%" height="315" src="https://www.youtube.com/embed/{video_id}" frameborder="0" allowfullscreen></iframe><br>{title}' else: return "No video found." except Exception as e: return f"Error searching video: {str(e)}"
+def search_youtube_video(query):
+    try:
+        api_key = os.environ.get("YOUTUBE_API_KEY")
+        youtube = build("youtube", "v3", developerKey=api_key)
+        request = youtube.search().list(part="snippet", q=query, type="video", maxResults=1)
+        response = request.execute()
+        items = response.get("items")
+        if items:
+            video_id = items[0]["id"]["videoId"]
+            title = items[0]["snippet"]["title"]
+            return f'<iframe width="100%" height="315" src="https://www.youtube.com/embed/{video_id}" frameborder="0" allowfullscreen></iframe><br>{title}'
+        else:
+            return "No video found."
+    except Exception as e:
+        return f"Error searching video: {str(e)}"
 
-def cleanup_audio(*files): time.sleep(10) for file in files: if os.path.exists(file): os.remove(file)
+def cleanup_audio(*files):
+    time.sleep(10)
+    for file in files:
+        if os.path.exists(file):
+            os.remove(file)
 
-@app.route("/") def index(): return render_template_string(chat_html)
+@app.route("/")
+def index():
+    return render_template_string(chat_html)
 
-@app.route("/chat", methods=["POST"]) def chat_post(): message = request.get_json().get("message", "") name = "" if any(keyword in message.lower() for keyword in ["play", "show me", "turn on", "video of"]): topic = extract_topic(message) response = search_youtube_video(topic) else: intent = detect_query_type(message) if intent in ["who", "what", "where"]: topic = extract_topic(message) response = search_wikipedia(topic) else: response = get_chatbot_response(message, name) return jsonify({"response": response})
+@app.route("/chat", methods=["POST"])
+def chat_post():
+    message = request.get_json().get("message", "")
+    name = ""
+    if any(keyword in message.lower() for keyword in ["play", "show me", "turn on", "video of"]):
+        topic = extract_topic(message)
+        response = search_youtube_video(topic)
+    else:
+        intent = detect_query_type(message)
+        if intent in ["who", "what", "where"]:
+            topic = extract_topic(message)
+            response = search_wikipedia(topic)
+        else:
+            response = get_chatbot_response(message, name)
+    return jsonify({"response": response})
 
-@app.route("/speak", methods=["POST"]) def speak(): text = request.get_json().get("text", "") if not text: return jsonify({"error": "No text provided"}), 400 tts = gTTS(text=text, lang="en") filename = "temp.mp3" tts.save(filename) threading.Thread(target=cleanup_audio, args=(filename,)).start() return send_file(filename, mimetype="audio/mpeg")
+@app.route("/speak", methods=["POST"])
+def speak():
+    text = request.get_json().get("text", "")
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    tts = gTTS(text=text, lang="en")
+    filename = "temp.mp3"
+    tts.save(filename)
+    threading.Thread(target=cleanup_audio, args=(filename,)).start()
+    return send_file(filename, mimetype="audio/mpeg")
 
-@app.route("/setname", methods=["POST"]) def setname(): return jsonify({"status": "success"})
+@app.route("/setname", methods=["POST"])
+def setname():
+    return jsonify({"status": "success"})
 
-@app.route("/settheme", methods=["POST"]) def settheme(): return jsonify({"status": "success"})
+@app.route("/settheme", methods=["POST"])
+def settheme():
+    return jsonify({"status": "success"})
 
-if name == "main": app.run(debug=True)
-
+if __name__ == "__main__":
+    app.run(debug=True)
