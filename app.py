@@ -118,10 +118,7 @@ chat_html = '''<!DOCTYPE html>
     <button id="send-btn">➤</button>
     <button id="theme-btn">🎨</button>
   </div>
-  <script>
 <script>
-const themeBtn = document.getElementById("theme-btn");
-const sendBtn = document.getElementById("send-btn");
 window.onload = function () {
   const themes = [
     { name: "Spiderman", title: "#800020", bg: "#880808", ai: "#191970", user: "#A42A04", input: "#A52A2A", btn: "#1434A4" },
