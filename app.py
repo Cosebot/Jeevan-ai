@@ -11,13 +11,15 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default")
 app.permanent_session_lifetime = 365 * 24 * 60 * 60
 
-# Combined HTML, CSS, JS all in one file for inline rendering
 chat_html = '''<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sanji AI - Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Single:wght@100..900&display=swap" rel="stylesheet">
   <style>
     :root {
       --title-bg: #800020;
@@ -51,15 +53,7 @@ chat_html = '''<!DOCTYPE html>
       justify-content: center;
     }
     #transitionText {
-      animation: switchText 6s infinite;
       transition: opacity 1s ease-in-out;
-    }
-    @keyframes switchText {
-      0% { content: "Sanji AI"; opacity: 1; }
-      49% { content: "Sanji AI"; opacity: 1; }
-      50% { content: "Making your day better"; opacity: 0; }
-      52% { opacity: 1; }
-      100% { content: "Making your day better"; opacity: 1; }
     }
     .chat-container {
       flex: 1;
@@ -88,6 +82,10 @@ chat_html = '''<!DOCTYPE html>
       padding: 10px;
       background-color: var(--input-bg);
       gap: 5px;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
     input[type="text"] {
       flex: 1;
@@ -140,10 +138,21 @@ chat_html = '''<!DOCTYPE html>
       document.documentElement.style.setProperty("--input-bg", theme.input);
       document.documentElement.style.setProperty("--btn-bg", theme.btn);
     });
+
+    // Title animation
+    const titleText = document.getElementById("transitionText");
+    let toggle = true;
+    setInterval(() => {
+      titleText.style.opacity = 0;
+      setTimeout(() => {
+        titleText.textContent = toggle ? "Making your day better" : "Sanji AI";
+        titleText.style.opacity = 1;
+        toggle = !toggle;
+      }, 500);
+    }, 5000);
   </script>
 </body>
 </html>'''
-
 # --- Chat Logic ---
 english_responses = {
     "hello": ["Hello there! How can I assist you today?", "Hi! Need anything?", "Hey! I'm here to help."],
