@@ -119,38 +119,77 @@ chat_html = '''<!DOCTYPE html>
     <button id="theme-btn">🎨</button>
   </div>
   <script>
-    const themes = [
-      { name: "Spiderman", title: "#800020", bg: "#880808", ai: "#191970", user: "#A42A04", input: "#A52A2A", btn: "#1434A4" },
-      { name: "Real Madrid", title: "#EDEADE", bg: "#87CEEB", ai: "#D22B2B", user: "#5D3FD3", input: "#FFD5EE", btn: "#FFAA33" },
-      { name: "Zoro", title: "#097969", bg: "#50C878", ai: "#E4D00A", user: "#00A36C", input: "#0BDA51", btn: "#5D3FD3" },
-      { name: "Cars", title: "#A7C7E7", bg: "#C2B280", ai: "#4682B4", user: "#D2042D", input: "#FF2400", btn: "#FDDA0D" },
-      { name: "GTA SA", title: "#1B2121", bg: "#FFAC1C", ai: "#9F2B68", user: "#009E60", input: "#93C572", btn: "#E5E4E2" },
-      { name: "Squid Game", title: "#36454F", bg: "#800020", ai: "#DC143C", user: "#478778", input: "#2AAA8A", btn: "#355E3B" }
-    ];
-    let currentTheme = 0;
-    document.getElementById("theme-btn").addEventListener("click", () => {
-      currentTheme = (currentTheme + 1) % themes.length;
-      const theme = themes[currentTheme];
-      document.documentElement.style.setProperty("--title-bg", theme.title);
-      document.documentElement.style.setProperty("--bg", theme.bg);
-      document.documentElement.style.setProperty("--ai-bubble", theme.ai);
-      document.documentElement.style.setProperty("--user-bubble", theme.user);
-      document.documentElement.style.setProperty("--input-bg", theme.input);
-      document.documentElement.style.setProperty("--btn-bg", theme.btn);
+window.onload = function () {
+  const themes = [
+    { name: "Spiderman", title: "#800020", bg: "#880808", ai: "#191970", user: "#A42A04", input: "#A52A2A", btn: "#1434A4" },
+    { name: "Real Madrid", title: "#EDEADE", bg: "#87CEEB", ai: "#D22B2B", user: "#5D3FD3", input: "#FFD5EE", btn: "#FFAA33" },
+    { name: "Zoro", title: "#097969", bg: "#50C878", ai: "#E4D00A", user: "#00A36C", input: "#0BDA51", btn: "#5D3FD3" },
+    { name: "Cars", title: "#A7C7E7", bg: "#C2B280", ai: "#4682B4", user: "#D2042D", input: "#FF2400", btn: "#FDDA0D" },
+    { name: "GTA SA", title: "#1B2121", bg: "#FFAC1C", ai: "#9F2B68", user: "#009E60", input: "#93C572", btn: "#E5E4E2" },
+    { name: "Squid Game", title: "#36454F", bg: "#800020", ai: "#DC143C", user: "#478778", input: "#2AAA8A", btn: "#355E3B" }
+  ];
+  let currentTheme = 0;
+
+  document.getElementById("theme-btn").addEventListener("click", () => {
+    currentTheme = (currentTheme + 1) % themes.length;
+    const theme = themes[currentTheme];
+    document.documentElement.style.setProperty("--title-bg", theme.title);
+    document.documentElement.style.setProperty("--bg", theme.bg);
+    document.documentElement.style.setProperty("--ai-bubble", theme.ai);
+    document.documentElement.style.setProperty("--user-bubble", theme.user);
+    document.documentElement.style.setProperty("--input-bg", theme.input);
+    document.documentElement.style.setProperty("--btn-bg", theme.btn);
+  });
+
+  // Title animation
+  const titleText = document.getElementById("transitionText");
+  let toggle = true;
+  setInterval(() => {
+    titleText.style.opacity = 0;
+    setTimeout(() => {
+      titleText.textContent = toggle ? "Making your day better" : "Sanji AI";
+      titleText.style.opacity = 1;
+      toggle = !toggle;
+    }, 500);
+  }, 5000);
+
+  // Send button logic
+  const chatContainer = document.getElementById("chat-container");
+  const userInput = document.getElementById("user-input");
+  const sendBtn = document.getElementById("send-btn");
+
+  sendBtn.addEventListener("click", () => {
+    const msg = userInput.value.trim();
+    if (msg === "") return;
+
+    const userBubble = document.createElement("div");
+    userBubble.className = "chat-bubble user-bubble";
+    userBubble.textContent = msg;
+    chatContainer.appendChild(userBubble);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    })
+    .then(res => res.json())
+    .then(data => {
+      const aiBubble = document.createElement("div");
+      aiBubble.className = "chat-bubble ai-bubble";
+      aiBubble.innerHTML = data.response;
+      chatContainer.appendChild(aiBubble);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
     });
 
-    // Title animation
-    const titleText = document.getElementById("transitionText");
-    let toggle = true;
-    setInterval(() => {
-      titleText.style.opacity = 0;
-      setTimeout(() => {
-        titleText.textContent = toggle ? "Making your day better" : "Sanji AI";
-        titleText.style.opacity = 1;
-        toggle = !toggle;
-      }, 500);
-    }, 5000);
-  </script>
+    userInput.value = "";
+  });
+
+  userInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendBtn.click();
+  });
+};
+</script>
 </body>
 </html>'''
 # --- Chat Logic ---
