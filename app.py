@@ -119,6 +119,7 @@ chat_html = '''<!DOCTYPE html>
     <button id="theme-btn">🎨</button>
   </div>
   <script>
+<script>
 window.onload = function () {
   const themes = [
     { name: "Spiderman", title: "#800020", bg: "#880808", ai: "#191970", user: "#A42A04", input: "#A52A2A", btn: "#1434A4" },
@@ -141,7 +142,6 @@ window.onload = function () {
     document.documentElement.style.setProperty("--btn-bg", theme.btn);
   });
 
-  // Title animation
   const titleText = document.getElementById("transitionText");
   let toggle = true;
   setInterval(() => {
@@ -153,10 +153,13 @@ window.onload = function () {
     }, 500);
   }, 5000);
 
-  // Send button logic
   const chatContainer = document.getElementById("chat-container");
   const userInput = document.getElementById("user-input");
   const sendBtn = document.getElementById("send-btn");
+
+  function scrollToBottom() {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
 
   sendBtn.addEventListener("click", () => {
     const msg = userInput.value.trim();
@@ -166,7 +169,7 @@ window.onload = function () {
     userBubble.className = "chat-bubble user-bubble";
     userBubble.textContent = msg;
     chatContainer.appendChild(userBubble);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    scrollToBottom();
 
     fetch("/chat", {
       method: "POST",
@@ -179,7 +182,7 @@ window.onload = function () {
       aiBubble.className = "chat-bubble ai-bubble";
       aiBubble.innerHTML = data.response;
       chatContainer.appendChild(aiBubble);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+      scrollToBottom();
     });
 
     userInput.value = "";
@@ -188,6 +191,9 @@ window.onload = function () {
   userInput.addEventListener("keypress", (e) => {
     if (e.key === "Enter") sendBtn.click();
   });
+
+  // Scroll to bottom on load
+  scrollToBottom();
 };
 </script>
 </body>
