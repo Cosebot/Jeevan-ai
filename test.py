@@ -132,7 +132,6 @@ def index():
                 if(e.key==="Enter") sendMessage();
             });
 
-            // Append message helper
             function appendMessage(text,sender){
                 const div = document.createElement("div");
                 div.className = "message " + sender;
@@ -142,12 +141,11 @@ def index():
                 return div;
             }
 
-            // Scroll helper
             function scrollToBottom(){
                 setTimeout(()=>{ chat.scrollTop = chat.scrollHeight; },50);
             }
 
-            // Streamed GPT Response
+            // Streaming GPT-5 response
             async function sendMessage(){
                 const text = input.value.trim();
                 if(!text) return;
@@ -157,7 +155,12 @@ def index():
                 const aiMsg = appendMessage("Typing...","ai");
 
                 try{
-                    const response = await puter.ai.chat(text, { stream:true, temperature:0.5, max_tokens:500 });
+                    const response = await puter.ai.chat(text, { 
+                        model: "gpt-5",   // <-- upgraded model
+                        stream:true, 
+                        temperature:0.5, 
+                        max_tokens:500 
+                    });
                     aiMsg.textContent="";
                     for await(const part of response){
                         aiMsg.textContent += part?.text || "";
