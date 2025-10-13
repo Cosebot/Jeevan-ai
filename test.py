@@ -11,7 +11,7 @@ def index():
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mega Sanji AI</title>
-    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://js.puter.com/v2/" onload="initMegaSanjiAI()"></script>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -117,7 +117,7 @@ def index():
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
+        function initMegaSanjiAI() {
             const chat = document.getElementById("chatContainer");
             const input = document.getElementById("userInput");
             const sendBtn = document.getElementById("sendBtn");
@@ -128,8 +128,8 @@ def index():
             imgBtn.addEventListener("click", generateImage);
 
             // Enter Key for sending text
-            input.addEventListener("keydown", (e) => {
-                if(e.key === "Enter") sendMessage();
+            input.addEventListener("keydown", (e)=>{
+                if(e.key==="Enter") sendMessage();
             });
 
             // Append message helper
@@ -218,8 +218,7 @@ def index():
                     puter.print(`AI requested: ${args.a} × ${args.b} = ${result}`);
                 }
             });
-
-        });
+        }
     </script>
 
 </body>
