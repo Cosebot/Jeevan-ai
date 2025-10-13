@@ -3,6 +3,5 @@ gunicorn
 gtts
 requests
 speechrecognition
-wikipedia
 google-api-python-client
 supabase
