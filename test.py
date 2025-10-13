@@ -10,7 +10,7 @@ def index():
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Puter AI Chat</title>
+  <title>Puter AI Chat + Image</title>
   <script src="https://js.puter.com/v2/"></script>
   <style>
     body {
@@ -25,12 +25,13 @@ def index():
       justify-content: space-between;
       height: 100vh;
       width: 100vw;
+      overflow: hidden;
     }
 
     .chat-container {
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
+      justify-content: flex-start;
       width: 100%;
       height: 100%;
       max-width: 420px;
@@ -39,6 +40,7 @@ def index():
       background: linear-gradient(180deg, #1b1b1b, #000);
       border-radius: 12px;
       overflow-y: auto;
+      scroll-behavior: smooth;
     }
 
     .message {
@@ -60,6 +62,14 @@ def index():
     .ai {
       align-self: flex-start;
       background: #333;
+    }
+
+    img.generated {
+      width: 100%;
+      border-radius: 12px;
+      margin-top: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+      animation: fadeIn 0.3s ease;
     }
 
     @keyframes fadeIn {
@@ -89,12 +99,12 @@ def index():
     }
 
     button {
-      margin-left: 10px;
+      margin-left: 8px;
       background: #0066ff;
       color: white;
       border: none;
       border-radius: 8px;
-      padding: 10px 15px;
+      padding: 10px 12px;
       cursor: pointer;
       font-weight: bold;
       transition: background 0.2s;
@@ -103,22 +113,41 @@ def index():
     button:hover {
       background: #0052cc;
     }
+
+    .btn-small {
+      font-size: 13px;
+      padding: 8px 10px;
+      background: #00c2ff;
+    }
+    .btn-small:hover {
+      background: #009fd1;
+    }
   </style>
 </head>
 <body>
   <div class="chat-container" id="chatContainer">
-    <div class="message ai">Welcome! Ask me anything 💬</div>
+    <div class="message ai">Welcome! Ask me anything 💬 or generate an image 🖼️</div>
   </div>
 
   <div class="input-container">
-    <input id="userInput" placeholder="Type your question..." />
-    <button onclick="sendMessage()">Send</button>
+    <input id="userInput" placeholder="Type your question or image prompt..." />
+    <button onclick="sendMessage()">💬</button>
+    <button class="btn-small" onclick="generateImage()">🖼️</button>
   </div>
 
   <script>
+    const chat = document.getElementById("chatContainer");
+
+    function safeScrollToBottom() {
+      const threshold = 50;
+      const distanceFromBottom = chat.scrollHeight - chat.scrollTop - chat.clientHeight;
+      if (distanceFromBottom < threshold) {
+        chat.scrollTop = chat.scrollHeight;
+      }
+    }
+
     async function sendMessage() {
       const input = document.getElementById("userInput");
-      const chat = document.getElementById("chatContainer");
       const text = input.value.trim();
       if (!text) return;
 
@@ -127,13 +156,13 @@ def index():
       userMsg.textContent = text;
       chat.appendChild(userMsg);
       input.value = "";
-      chat.scrollTop = chat.scrollHeight;
+      safeScrollToBottom();
 
       const aiMsg = document.createElement("div");
       aiMsg.className = "message ai";
       aiMsg.textContent = "Typing...";
       chat.appendChild(aiMsg);
-      chat.scrollTop = chat.scrollHeight;
+      safeScrollToBottom();
 
       try {
         const response = await puter.ai.chat(text, { model: "gpt-5-nano" });
@@ -142,7 +171,37 @@ def index():
         aiMsg.textContent = "⚠️ Error: " + err.message;
       }
 
-      chat.scrollTop = chat.scrollHeight;
+      safeScrollToBottom();
+    }
+
+    async function generateImage() {
+      const input = document.getElementById("userInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const userMsg = document.createElement("div");
+      userMsg.className = "message user";
+      userMsg.textContent = text;
+      chat.appendChild(userMsg);
+      input.value = "";
+      safeScrollToBottom();
+
+      const aiMsg = document.createElement("div");
+      aiMsg.className = "message ai";
+      aiMsg.textContent = "🎨 Generating image...";
+      chat.appendChild(aiMsg);
+      safeScrollToBottom();
+
+      try {
+        const imageElement = await puter.ai.txt2img(text, { model: "gpt-image-1" });
+        aiMsg.textContent = "Here's your image:";
+        imageElement.classList.add("generated");
+        chat.appendChild(imageElement);
+      } catch (err) {
+        aiMsg.textContent = "⚠️ Error generating image: " + err.message;
+      }
+
+      safeScrollToBottom();
     }
   </script>
 </body>
