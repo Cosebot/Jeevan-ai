@@ -21,7 +21,21 @@ def index():
         @keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
         #status{font-size:16px;text-align:center;margin-top:10px;}
         #aiContainer{display:none;flex-direction:column;height:100vh;width:100%;}
-        .chat-container{flex:1;display:flex;flex-direction:column;justify-content:flex-start;width:100%;max-width:420px;padding:15px;background:linear-gradient(180deg,#1b1b1b,#000);border-radius:12px;overflow-y:auto;scroll-behavior:smooth;margin-bottom:70px;}
+        .chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+    max-width: 420px;
+    padding: 15px;
+    padding-bottom: 90px; /* add this */
+    background: linear-gradient(180deg,#1b1b1b,#000);
+    border-radius: 12px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    margin-bottom: 70px;
+}
         .message{background:#222;padding:12px 16px;border-radius:14px;margin:8px 0;max-width:80%;word-wrap:break-word;line-height:1.4;animation:fadeIn 0.3s ease;}
         .user{align-self:flex-end;background:#0066ff;}
         .ai{align-self:flex-start;background:#333;}
