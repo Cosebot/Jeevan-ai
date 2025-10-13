@@ -1,4 +1,5 @@
 from flask import Flask, Response
+import os
 
 app = Flask(__name__)
 
@@ -202,5 +203,6 @@ dynamicLoading();
 """
     return Response(html_content, mimetype='text/html')
 
-if __name__=="__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # use Render's assigned port, default to 5000
+    app.run(debug=True, host="0.0.0.0", port=port, threaded=True)
