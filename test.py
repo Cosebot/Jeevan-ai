@@ -66,6 +66,11 @@ button, input, a { -webkit-tap-highlight-color:transparent; touch-action:manipul
 </head>
 <body>
 
+<!-- Hidden GTA IV Theme YouTube iframe -->
+<iframe id="gtaTheme" width="0" height="0"
+src="https://www.youtube.com/embed/xh40QxwZz7Q?autoplay=1&loop=1&playlist=xh40QxwZz7Q&controls=0&disablekb=1&modestbranding=1"
+frameborder="0" allow="autoplay" style="display:none"></iframe>
+
 <!-- Loading Screen -->
 <div id="loadingScreen">
     <div class="loader"></div>
@@ -98,21 +103,19 @@ const statuses = [
 const statusEl = document.getElementById("status");
 const loadingScreen = document.getElementById("loadingScreen");
 const aiContainer = document.getElementById("aiContainer");
-let index=0;
 
-function nextStatus(){
-    if(index < statuses.length){
-        statusEl.textContent = statuses[index];
-        index++;
-        setTimeout(nextStatus,1200);
-    } else {
-        loadingScreen.style.display="none";
-        aiContainer.style.display="flex";
-        startMegaSanjiAI();
-    }
+// Scroll helper
+function scrollToBottom(chat){ setTimeout(()=>{ chat.scrollTop=chat.scrollHeight; },50); }
+
+// Append message helper
+function appendMessage(chat,text,sender){
+    const div=document.createElement("div");
+    div.className="message "+sender;
+    div.textContent=text;
+    chat.appendChild(div);
+    scrollToBottom(chat);
+    return div;
 }
-
-nextStatus();
 
 // Safe Puter wrapper
 async function safePuterChat(prompt, params){
@@ -135,30 +138,19 @@ async function startMegaSanjiAI(){
     imgBtn.addEventListener("pointerup",generateImage);
     input.addEventListener("keydown",(e)=>{ if(e.key==="Enter") sendMessage(); });
 
-    function scrollToBottom(){ setTimeout(()=>{ chat.scrollTop=chat.scrollHeight; },50); }
-
-    function appendMessage(text,sender){
-        const div=document.createElement("div");
-        div.className="message "+sender;
-        div.textContent=text;
-        chat.appendChild(div);
-        scrollToBottom();
-        return div;
-    }
-
     async function sendMessage(){
         const text=input.value.trim();
         if(!text) return;
-        appendMessage(text,"user");
+        appendMessage(chat,text,"user");
         input.value="";
-        const aiMsg=appendMessage("Typing...","ai");
+        const aiMsg=appendMessage(chat,"Typing...","ai");
 
         try{
             const response = await safePuterChat(text,{ model:"gpt-5", stream:true, temperature:0.5, max_tokens:500 });
             aiMsg.textContent="";
             for await(const part of response){
                 aiMsg.textContent += part?.text||"";
-                scrollToBottom();
+                scrollToBottom(chat);
             }
         } catch(err){
             aiMsg.textContent = "⚠️ Error: " + (err.message || "Unknown error");
@@ -168,9 +160,9 @@ async function startMegaSanjiAI(){
     async function generateImage(){
         const text=input.value.trim();
         if(!text) return;
-        appendMessage(text,"user");
+        appendMessage(chat,text,"user");
         input.value="";
-        const aiMsg=appendMessage("🎨 Generating image...","ai");
+        const aiMsg=appendMessage(chat,"🎨 Generating image...","ai");
 
         try{
             await new Promise(resolve=>{
@@ -181,12 +173,40 @@ async function startMegaSanjiAI(){
             aiMsg.textContent="Here's your image:";
             imageElement.classList.add("generated");
             chat.appendChild(imageElement);
-            scrollToBottom();
+            scrollToBottom(chat);
         } catch(err){
             aiMsg.textContent = "⚠️ Error generating image: " + (err.message || "Unknown error");
         }
     }
 }
+
+// Dynamic loading sequence until libraries fully loaded
+async function dynamicLoading(){
+    const iframe = document.getElementById('gtaTheme'); // starts auto-playing GTA IV theme
+
+    for(let i=0;i<statuses.length;i++){
+        statusEl.textContent = statuses[i];
+
+        if(i === statuses.length-1){
+            await new Promise(resolve=>{
+                if(window.puter && window.puter.ai) resolve();
+                else window.addEventListener('puter:loaded', resolve);
+            });
+        }
+
+        await new Promise(r=>setTimeout(r,1200));
+    }
+
+    // Stop GTA IV theme
+    iframe.src = "";
+
+    loadingScreen.style.display="none";
+    aiContainer.style.display="flex";
+    startMegaSanjiAI();
+}
+
+// Start cinematic loader
+dynamicLoading();
 </script>
 
 </body>
