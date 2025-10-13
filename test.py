@@ -13,6 +13,9 @@ def index():
   <title>Puter AI Chat + Image</title>
   <script src="https://js.puter.com/v2/"></script>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       padding: 0;
@@ -22,21 +25,20 @@ def index():
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       height: 100vh;
       width: 100vw;
       overflow: hidden;
     }
 
     .chat-container {
+      flex: 1;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
       width: 100%;
-      height: 100%;
       max-width: 420px;
       padding: 15px;
-      box-sizing: border-box;
       background: linear-gradient(180deg, #1b1b1b, #000);
       border-radius: 12px;
       overflow-y: auto;
@@ -77,28 +79,31 @@ def index():
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .input-container {
+    .input-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       width: 100%;
       max-width: 420px;
-      display: flex;
+      padding: 10px;
       background: #111;
       border-top: 1px solid #333;
-      padding: 10px;
-      box-sizing: border-box;
+      position: sticky;
+      bottom: 0;
     }
 
-    input {
+    .input-bar input {
       flex: 1;
       background: #000;
       color: #fff;
       border: none;
-      padding: 10px;
+      padding: 12px;
       border-radius: 8px;
       outline: none;
       font-size: 15px;
     }
 
-    button {
+    .input-bar button {
       margin-left: 8px;
       background: #0066ff;
       color: white;
@@ -108,17 +113,19 @@ def index():
       cursor: pointer;
       font-weight: bold;
       transition: background 0.2s;
+      flex-shrink: 0;
     }
 
-    button:hover {
+    .input-bar button:hover {
       background: #0052cc;
     }
 
     .btn-small {
       font-size: 13px;
-      padding: 8px 10px;
+      padding: 10px 10px;
       background: #00c2ff;
     }
+
     .btn-small:hover {
       background: #009fd1;
     }
@@ -129,8 +136,8 @@ def index():
     <div class="message ai">Welcome! Ask me anything 💬 or generate an image 🖼️</div>
   </div>
 
-  <div class="input-container">
-    <input id="userInput" placeholder="Type your question or image prompt..." />
+  <div class="input-bar">
+    <input id="userInput" placeholder="Type your message or image prompt..." />
     <button onclick="sendMessage()">💬</button>
     <button class="btn-small" onclick="generateImage()">🖼️</button>
   </div>
