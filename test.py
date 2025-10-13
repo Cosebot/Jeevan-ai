@@ -114,14 +114,18 @@ function nextStatus(){
 
 nextStatus();
 
-// Mega Sanji AI Init
-async function startMegaSanjiAI(){
-    // Wait for Puter library to be ready
+// Safe Puter wrapper
+async function safePuterChat(prompt, params){
     await new Promise(resolve=>{
         if(window.puter && window.puter.ai) resolve();
         else window.addEventListener('puter:loaded', resolve);
     });
+    try { return await puter.ai.chat(prompt, params); }
+    catch(e){ console.error("Puter chat error:",e); throw e; }
+}
 
+// Mega Sanji AI Init
+async function startMegaSanjiAI(){
     const chat=document.getElementById("chatContainer");
     const input=document.getElementById("userInput");
     const sendBtn=document.getElementById("sendBtn");
@@ -148,15 +152,16 @@ async function startMegaSanjiAI(){
         appendMessage(text,"user");
         input.value="";
         const aiMsg=appendMessage("Typing...","ai");
+
         try{
-            const response=await puter.ai.chat(text,{ model:"gpt-5", stream:true, temperature:0.5, max_tokens:500 });
+            const response = await safePuterChat(text,{ model:"gpt-5", stream:true, temperature:0.5, max_tokens:500 });
             aiMsg.textContent="";
             for await(const part of response){
-                aiMsg.textContent+=part?.text||"";
+                aiMsg.textContent += part?.text||"";
                 scrollToBottom();
             }
-        }catch(err){
-            aiMsg.textContent="⚠️ Error: "+err.message;
+        } catch(err){
+            aiMsg.textContent = "⚠️ Error: " + (err.message || "Unknown error");
         }
     }
 
@@ -166,14 +171,19 @@ async function startMegaSanjiAI(){
         appendMessage(text,"user");
         input.value="";
         const aiMsg=appendMessage("🎨 Generating image...","ai");
+
         try{
+            await new Promise(resolve=>{
+                if(window.puter && window.puter.ai) resolve();
+                else window.addEventListener('puter:loaded', resolve);
+            });
             const imageElement = await puter.ai.txt2img(text, { model: "dall-e-3" });
             aiMsg.textContent="Here's your image:";
             imageElement.classList.add("generated");
             chat.appendChild(imageElement);
             scrollToBottom();
-        }catch(err){
-            aiMsg.textContent="⚠️ Error generating image: "+err.message;
+        } catch(err){
+            aiMsg.textContent = "⚠️ Error generating image: " + (err.message || "Unknown error");
         }
     }
 }
