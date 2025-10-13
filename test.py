@@ -220,7 +220,7 @@ def index():
                 try{
                     await waitForPuter();
                     const response = await puter.ai.chat(text, {
-                        model: "gpt-5-nano"
+                        model: "gpt-5"
                     });
                     aiMsg.textContent = response;
                 } catch(err){
