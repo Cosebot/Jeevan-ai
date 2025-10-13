@@ -66,11 +66,6 @@ button, input, a { -webkit-tap-highlight-color:transparent; touch-action:manipul
 </head>
 <body>
 
-<!-- Hidden GTA IV Theme YouTube iframe -->
-<iframe id="gtaTheme" width="0" height="0"
-src="https://www.youtube.com/embed/xh40QxwZz7Q?autoplay=1&loop=1&playlist=xh40QxwZz7Q&controls=0&disablekb=1&modestbranding=1"
-frameborder="0" allow="autoplay" style="display:none"></iframe>
-
 <!-- Loading Screen -->
 <div id="loadingScreen">
     <div class="loader"></div>
@@ -117,14 +112,12 @@ function appendMessage(chat,text,sender){
     return div;
 }
 
-// Safe Puter wrapper
-async function safePuterChat(prompt, params){
-    await new Promise(resolve=>{
-        if(window.puter && window.puter.ai) resolve();
+// Ensure Puter is fully loaded
+function waitForPuter() {
+    return new Promise(resolve => {
+        if (window.puter && window.puter.ai) resolve();
         else window.addEventListener('puter:loaded', resolve);
     });
-    try { return await puter.ai.chat(prompt, params); }
-    catch(e){ console.error("Puter chat error:",e); throw e; }
 }
 
 // Mega Sanji AI Init
@@ -146,7 +139,13 @@ async function startMegaSanjiAI(){
         const aiMsg=appendMessage(chat,"Typing...","ai");
 
         try{
-            const response = await safePuterChat(text,{ model:"gpt-5", stream:true, temperature:0.5, max_tokens:500 });
+            await waitForPuter();
+            const response = await puter.ai.chat(text, { 
+                model:"gpt-5-nano", 
+                stream:true, 
+                temperature:0.5, 
+                max_tokens:500 
+            });
             aiMsg.textContent="";
             for await(const part of response){
                 aiMsg.textContent += part?.text||"";
@@ -165,10 +164,7 @@ async function startMegaSanjiAI(){
         const aiMsg=appendMessage(chat,"🎨 Generating image...","ai");
 
         try{
-            await new Promise(resolve=>{
-                if(window.puter && window.puter.ai) resolve();
-                else window.addEventListener('puter:loaded', resolve);
-            });
+            await waitForPuter();
             const imageElement = await puter.ai.txt2img(text, { model: "dall-e-3" });
             aiMsg.textContent="Here's your image:";
             imageElement.classList.add("generated");
@@ -180,32 +176,24 @@ async function startMegaSanjiAI(){
     }
 }
 
-// Dynamic loading sequence until libraries fully loaded
+// Dynamic loading sequence
 async function dynamicLoading(){
-    const iframe = document.getElementById('gtaTheme'); // starts auto-playing GTA IV theme
-
     for(let i=0;i<statuses.length;i++){
         statusEl.textContent = statuses[i];
 
         if(i === statuses.length-1){
-            await new Promise(resolve=>{
-                if(window.puter && window.puter.ai) resolve();
-                else window.addEventListener('puter:loaded', resolve);
-            });
+            await waitForPuter();
         }
 
         await new Promise(r=>setTimeout(r,1200));
     }
-
-    // Stop GTA IV theme
-    iframe.src = "";
 
     loadingScreen.style.display="none";
     aiContainer.style.display="flex";
     startMegaSanjiAI();
 }
 
-// Start cinematic loader
+// Start loader
 dynamicLoading();
 </script>
 
