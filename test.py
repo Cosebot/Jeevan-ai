@@ -137,24 +137,39 @@ async function startMegaSanjiAI(){
         }
     }
 
-    async function generateImage(){
-        const text = input.value.trim();
-        if(!text) return;
-        appendMessage(chat, text, "user");
-        input.value = "";
-        const aiMsg = appendMessage(chat, "🎨 Generating image...", "ai");
+   async function generateImage() {
+    const text = input.value.trim();
+    if (!text) return;
 
-        try{
-            await waitForPuter();
-            const img = await puter.ai.txt2img(text, { model: "dall-e-3" });
-            aiMsg.textContent = "Here's your image:";
-            img.classList.add("generated");
-            chat.appendChild(img);
-            scrollToBottom(chat);
-        } catch(err){
-            aiMsg.textContent = "⚠️ Error generating image: "+(err.message||"Unknown error");
-        }
+    // Show user's prompt in chat
+    appendMessage(chat, text, "user");
+    input.value = "";
+
+    // Temporary "thinking" message
+    const aiMsg = appendMessage(chat, "🎨 Generating image...", "ai");
+
+    try {
+        // Wait until puter is loaded
+        await waitForPuter();
+
+        // Generate image (usually returns a URL)
+        const imgUrl = await puter.ai.txt2img(text, { model: "dall-e-3" });
+
+        // Replace "thinking" text with actual image
+        aiMsg.textContent = "Here's your image:";
+        const img = document.createElement("img");
+        img.src = imgUrl;           // set the generated image URL
+        img.classList.add("generated");
+
+        // Append image inside chat
+        chat.appendChild(img);
+        scrollToBottom(chat);
+
+    } catch (err) {
+        aiMsg.textContent = "⚠️ Error generating image: " + (err.message || "Unknown error");
+        console.error("Generate Image Error:", err);
     }
+}
 }
 
 // Loader (1 min)
