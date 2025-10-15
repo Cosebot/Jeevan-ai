@@ -153,7 +153,7 @@ async function startMegaSanjiAI(){
         await waitForPuter();
 
         // Generate image (usually returns a URL)
-        const imgUrl = await puter.ai.txt2img(text, { model: "dall-e-3" });
+        const imgUrl = await puter.ai.txt2img(text, { model: "dall-e-2" });
 
         // Replace "thinking" text with actual image
         aiMsg.textContent = "Here's your image:";
