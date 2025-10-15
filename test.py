@@ -17,7 +17,7 @@ def index():
 *{box-sizing:border-box;margin:0;padding:0;}
 body{
     font-family:'Poppins',sans-serif;
-    background: linear-gradient(135deg, #FF7F50, #FFB347, #6A0DAD); /* Orange -> Yellowish Orange -> Purple */
+    background: linear-gradient(135deg, #FF7F50, #FFB347, #6A0DAD);
     color:#fff;
     display:flex;
     justify-content:center;
@@ -34,13 +34,13 @@ body{
     height:100vh;
 }
 #loadingScreen img{
-    width:160px;   /* doubled size */
+    width:160px;
     height:160px;
     margin-bottom:30px;
     animation: pulse 1s infinite;
 }
 #status{
-    font-size:32px;  /* doubled size */
+    font-size:32px;
     font-weight:bold;
     text-align:center;
     margin-top:20px;
@@ -55,7 +55,7 @@ body{
     flex-direction:column;
     height:100vh;
     width:100%;
-    background: linear-gradient(135deg, #FF7F50, #FFB347, #6A0DAD); /* same gradient for bot theme */
+    background: linear-gradient(135deg, #FF7F50, #FFB347, #6A0DAD);
 }
 .chat-container{
     flex:1;
@@ -264,23 +264,27 @@ async function startMegaSanjiAI(){
 async function dynamicLoading(){
     const totalTime=60000;
     const interval=totalTime/statuses.length;
-    for(let i=0;i<statuses.length;i++){
-        statusEl.textContent=statuses[i];
-        await new Promise(r=>setTimeout(r,interval));
+    for(let i=0;i<statuses.length;i++){statusEl.textContent = statuses[i];
+        await new Promise(r => setTimeout(r, interval));
     }
-    try{await waitForPuter();} catch(err){console.warn(err.message); statusEl.textContent="⚠️ Puter failed to load. Continuing..."; await new Promise(r=>setTimeout(r,1500));}
-    loadingScreen.style.display="none";
-    aiContainer.style.display="flex";
+    try {
+        await waitForPuter();
+    } catch(err) {
+        console.warn(err.message);
+        statusEl.textContent = "⚠️ Puter failed to load. Continuing...";
+        await new Promise(r=>setTimeout(r,1500));
+    }
+    loadingScreen.style.display = "none";
+    aiContainer.style.display = "flex";
     startMegaSanjiAI();
 }
 
-document.addEventListener("DOMContentLoaded",dynamicLoading);
+document.addEventListener("DOMContentLoaded", dynamicLoading);
 </script>
 </body>
 </html>
 """
     return Response(html_content, mimetype='text/html')
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
