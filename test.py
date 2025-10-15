@@ -17,8 +17,7 @@ def index():
 *{box-sizing:border-box;margin:0;padding:0;}
 body{
     font-family:'Poppins',sans-serif;
-    background: url('https://i.pinimg.com/originals/2n/k5/sl/dw/2Nk5slDWR.jpg') no-repeat center center fixed;
-    background-size: cover;
+    background: linear-gradient(135deg, #FF7F50, #FFB347, #6A0DAD); /* Orange -> yellowish-orange -> Purple */
     color:#fff;
     display:flex;
     justify-content:center;
@@ -33,8 +32,6 @@ body{
     justify-content:center;
     width:100%;
     height:100vh;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(4px);
 }
 #loadingScreen img{
     width:80px;
@@ -220,11 +217,11 @@ async function dynamicLoading(){
 
 document.addEventListener("DOMContentLoaded",dynamicLoading);
 </script>
-
 </body>
 </html>
 """
     return Response(html_content, mimetype='text/html')
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
