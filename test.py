@@ -141,14 +141,11 @@ async function startMegaSanjiAI(){
     const text = input.value.trim();
     if (!text) return;
 
-    // Show user's prompt in chat
     appendMessage(chat, text, "user");
     input.value = "";
 
-    // Temporary AI message for typing effect
     const aiMsg = appendMessage(chat, "", "ai");
 
-    // Function to type out status
     async function typeStatus(message, delay = 50) {
         aiMsg.textContent = "";
         for (let i = 0; i < message.length; i++) {
@@ -166,7 +163,6 @@ async function startMegaSanjiAI(){
             return;
         }
 
-        // Step 1: Show low-res blurred preview
         await typeStatus("🎨 Painting your image... ✍️");
         const lowResUrl = await puter.ai.txt2img(text, { model: "gpt-image-1", size: "256x256" });
 
@@ -178,15 +174,10 @@ async function startMegaSanjiAI(){
         img.style.opacity = "0";
         chat.appendChild(img);
         scrollToBottom(chat);
-
-        // Fade in blurred image
         setTimeout(() => { img.style.opacity = "1"; }, 100);
 
-        // Step 2: Generate high-res image
         await typeStatus("🔍 Refining to high-res...");
         const highResUrl = await puter.ai.txt2img(text, { model: "gpt-image-1", size: "1080p" });
-
-        // Replace low-res with high-res and remove blur
         img.src = highResUrl;
         img.style.filter = "blur(0px)";
         img.style.transform = "scale(1.05)";
@@ -195,7 +186,8 @@ async function startMegaSanjiAI(){
         await typeStatus("✅ Your masterpiece is ready!");
 
     } catch (err) {
-        aiMsg.textContent = "⚠️ Error generating image: " + (err.message || "Unknown error");
+        // SHOW FULL ERROR TEMPORARILY
+        aiMsg.textContent = "⚠️ Error generating image:\n" + JSON.stringify(err, null, 2);
         console.error("Generate Image Error:", err);
     }
 }
