@@ -145,25 +145,54 @@ async function startMegaSanjiAI(){
     appendMessage(chat, text, "user");
     input.value = "";
 
-    // Temporary "thinking" message
-    const aiMsg = appendMessage(chat, "🎨 Generating image...", "ai");
+    // Temporary AI message for typing effect
+    const aiMsg = appendMessage(chat, "", "ai");
+
+    // Function to type out status
+    async function typeStatus(message, delay = 50) {
+        aiMsg.textContent = "";
+        for (let i = 0; i < message.length; i++) {
+            aiMsg.textContent += message[i];
+            await new Promise(r => setTimeout(r, delay));
+            scrollToBottom(chat);
+        }
+    }
 
     try {
-        // Wait until puter is loaded
         await waitForPuter();
 
-        // Generate image (usually returns a URL)
-        const imgUrl = await puter.ai.txt2img(text, { model: "dall-e-2" });
+        if (!puter.ai.txt2img) {
+            await typeStatus("⚠️ Image generation not supported in this version.");
+            return;
+        }
 
-        // Replace "thinking" text with actual image
-        aiMsg.textContent = "Here's your image:";
+        // Step 1: Show low-res blurred preview
+        await typeStatus("🎨 Painting your image... ✍️");
+        const lowResUrl = await puter.ai.txt2img(text, { model: "gpt-image-1", size: "256x256" });
+
         const img = document.createElement("img");
-        img.src = imgUrl;           // set the generated image URL
+        img.src = lowResUrl;
         img.classList.add("generated");
-
-        // Append image inside chat
+        img.style.filter = "blur(8px)";
+        img.style.transition = "filter 1s ease, transform 1s ease, opacity 0.8s ease";
+        img.style.opacity = "0";
         chat.appendChild(img);
         scrollToBottom(chat);
+
+        // Fade in blurred image
+        setTimeout(() => { img.style.opacity = "1"; }, 100);
+
+        // Step 2: Generate high-res image
+        await typeStatus("🔍 Refining to high-res...");
+        const highResUrl = await puter.ai.txt2img(text, { model: "gpt-image-1", size: "1080p" });
+
+        // Replace low-res with high-res and remove blur
+        img.src = highResUrl;
+        img.style.filter = "blur(0px)";
+        img.style.transform = "scale(1.05)";
+        setTimeout(() => { img.style.transform = "scale(1)"; }, 300);
+
+        await typeStatus("✅ Your masterpiece is ready!");
 
     } catch (err) {
         aiMsg.textContent = "⚠️ Error generating image: " + (err.message || "Unknown error");
