@@ -17,7 +17,7 @@ def index():
 *{box-sizing:border-box;margin:0;padding:0;}
 body{
     font-family:'Poppins',sans-serif;
-    background: linear-gradient(135deg, #FF7F50, #FFB347, #6A0DAD); /* Orange -> yellowish-orange -> Purple */
+    background: linear-gradient(135deg, #FF7F50, #FFB347, #6A0DAD); /* Orange -> Yellowish Orange -> Purple */
     color:#fff;
     display:flex;
     justify-content:center;
@@ -34,21 +34,29 @@ body{
     height:100vh;
 }
 #loadingScreen img{
-    width:80px;
-    height:80px;
-    margin-bottom:20px;
+    width:160px;   /* doubled size */
+    height:160px;
+    margin-bottom:30px;
     animation: pulse 1s infinite;
 }
 #status{
-    font-size:16px;
+    font-size:32px;  /* doubled size */
+    font-weight:bold;
     text-align:center;
-    margin-top:10px;
+    margin-top:20px;
+    text-shadow: 0 0 10px rgba(255,255,255,0.8);
 }
 @keyframes pulse{
     0%,100%{transform:scale(1);}
     50%{transform:scale(1.1);}
 }
-#aiContainer{display:none;flex-direction:column;height:100vh;width:100%;}
+#aiContainer{
+    display:none;
+    flex-direction:column;
+    height:100vh;
+    width:100%;
+    background: linear-gradient(135deg, #FF7F50, #FFB347, #6A0DAD); /* same gradient for bot theme */
+}
 .chat-container{
     flex:1;
     display:flex;
@@ -56,24 +64,75 @@ body{
     justify-content:flex-start;
     width:100%;
     max-width:420px;
-    padding:15px;
+    padding:20px;
     padding-bottom:90px;
-    background: linear-gradient(180deg,#1b1b1b,#000);
+    background: linear-gradient(180deg,#FF7F50,#FFB347,#6A0DAD);
     border-radius:12px;
     overflow-y:auto;
     scroll-behavior:smooth;
     margin-bottom:70px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
 }
-.message{background:#222;padding:12px 16px;border-radius:14px;margin:8px 0;max-width:80%;word-wrap:break-word;line-height:1.4;animation:fadeIn 0.3s ease;}
-.user{align-self:flex-end;background:#0066ff;}
-.ai{align-self:flex-start;background:#333;}
-img.generated{width:100%;border-radius:12px;margin-top:10px;box-shadow:0 0 10px rgba(0,0,0,0.4);animation:fadeIn 0.3s ease;}
+.message{
+    background: rgba(0,0,0,0.4);
+    padding:14px 18px;
+    border-radius:16px;
+    margin:10px 0;
+    max-width:80%;
+    word-wrap:break-word;
+    line-height:1.4;
+    animation:fadeIn 0.3s ease;
+    color:#fff;
+}
+.user{align-self:flex-end;background: rgba(0,102,255,0.8);}
+.ai{align-self:flex-start;background: rgba(51,51,51,0.8);}
+img.generated{
+    width:100%;
+    border-radius:12px;
+    margin-top:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.4);
+    animation:fadeIn 0.3s ease;
+}
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-.input-bar{display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px;background:#111;position:fixed;bottom:0;left:0;z-index:999;border-top:1px solid #333;}
-.input-bar input{flex:1;background:#000;color:#fff;border:none;padding:12px;border-radius:8px;outline:none;font-size:15px;margin-right:8px;}
-.input-bar button{flex-shrink:0;margin-left:4px;background:#0066ff;color:white;border:none;border-radius:8px;padding:10px 12px;cursor:pointer;font-weight:bold;transition:background 0.2s;}
+.input-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    padding:12px;
+    background: rgba(0,0,0,0.6);
+    position:fixed;
+    bottom:0;
+    left:0;
+    z-index:999;
+    border-top:1px solid #333;
+    backdrop-filter: blur(6px);
+}
+.input-bar input{
+    flex:1;
+    background: rgba(0,0,0,0.7);
+    color:#fff;
+    border:none;
+    padding:14px;
+    border-radius:10px;
+    outline:none;
+    font-size:16px;
+    margin-right:8px;
+}
+.input-bar button{
+    flex-shrink:0;
+    margin-left:4px;
+    background:#0066ff;
+    color:white;
+    border:none;
+    border-radius:10px;
+    padding:12px 14px;
+    cursor:pointer;
+    font-weight:bold;
+    transition:background 0.2s;
+}
 .input-bar button:hover{background:#0052cc;}
-.btn-small{font-size:13px;padding:10px 10px;background:#00c2ff;}
+.btn-small{font-size:14px;padding:10px 12px;background:#00c2ff;}
 .btn-small:hover{background:#009fd1;}
 button,input,a{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
 </style>
